@@ -9,6 +9,9 @@ edition = "2018"
 default = []
 
 [dependencies]
+regex = "*"
+globset = "*"
+walkdir = "*"
 
 [[bin]]
 name = "fs-assemble"
