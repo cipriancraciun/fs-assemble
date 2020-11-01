@@ -1,7 +1,5 @@
 
-
 fn main () -> ! {
-	eprintln! ("fs-assemble!");
-	panic! ();
+	fs_assemble::main ();
 }
 

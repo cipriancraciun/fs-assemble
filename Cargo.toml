@@ -14,6 +14,10 @@ default = []
 name = "fs-assemble"
 path = "./sources/bin.rs"
 
+[lib]
+name = "fs_assemble"
+path = "./sources/lib.rs"
+
 [profile.release]
 opt-level = 3
 codegen-units = 1
