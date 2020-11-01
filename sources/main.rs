@@ -1,10 +1,20 @@
 
 
-use ::std::env;
-use ::std::io;
-use ::std::process;
+use crate::prelude::*;
 
-use ::std::path::Path;
+
+
+
+fn main_0 (_script : &Path, _source : &Path, _target : &Path) -> Result<(), io::Error> {
+	
+	let mut _filter = fsas::FilterRules::new ();
+	
+	let mut _index = Vec::with_capacity (16 * 1024);
+	
+	fsas::index (_source, &_filter, &mut _index) ?;
+	
+	fail! (0x84c61b84, "not implemented!");
+}
 
 
 
@@ -27,13 +37,5 @@ pub fn main () -> ! {
 			process::exit (1);
 		}
 	}
-}
-
-
-
-
-fn main_0 (_script : &Path, _source : &Path, _target : &Path) -> Result<(), io::Error> {
-	
-	fail! (0x84c61b84, "not implemented!");
 }
 
