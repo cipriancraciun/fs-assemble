@@ -1,0 +1,10 @@
+#!/dev/null
+
+
+:: debug / build :: exec -- cargo build "${@}"
+:: release / build :: exec -- cargo build --release "${@}"
+
+
+:: debug / run / fs-assemble :: exec -- cargo run --bin fs-assemble -- "${@}"
+:: release / run / fs-assemble :: exec -- cargo run --bin fs-assemble --release -- "${@}"
+
