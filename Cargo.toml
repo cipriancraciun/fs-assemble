@@ -1,0 +1,24 @@
+
+[package]
+name = "fs-assemble"
+version = "0.0.0"
+authors = ["Ciprian Dorin Craciun <ciprian@volution.ro>"]
+edition = "2018"
+
+[features]
+default = []
+
+[dependencies]
+
+[[bin]]
+name = "fs-assemble"
+path = "./sources/bin.rs"
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = true
+debug = false
+incremental = false
+panic = "abort"
+
