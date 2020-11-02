@@ -48,7 +48,7 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 		};
 		
 		if ! _decision.recurse {
-			if _entry.is_dir () {
+			if _entry.is_dir {
 				log_debug! (0xb64e6f82, "dropping `{}`;", _entry.path.display ());
 				_walker.skip_current_dir ();
 			}
@@ -75,10 +75,19 @@ fn build_entry (_entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
 	let _depth = _entry.depth ();
 	let _path = _entry.into_path ();
 	
-	let _name = if let Some (_name) = _path.file_name () {
-		_name.to_owned ()
-	} else {
-		".".into ()
+	let _name : OsString = match _path.file_name () {
+		Some (_name) if _name == "" =>
+			fail! (0x706787d7, "invalid empty name for path `{}`", _path.display ()),
+		Some (_name) if (_name == ".") && (_depth == 0) =>
+			".".into (),
+		Some (_name) if _name == "." =>
+			fail! (0xdd2d6adb, "invalid dot name for path `{}`", _path.display ()),
+		Some (_name) =>
+			_name.into (),
+		None if _depth == 0 =>
+			"".into (),
+		None =>
+			fail! (0xbd9a2b27, "invalid empty name for path `{}`", _path.display ()),
 	};
 	
 	let _metadata_symlink = match fs::symlink_metadata (&_path) {
@@ -103,6 +112,11 @@ fn build_entry (_entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
 	
 	let _kind_follow = _metadata_follow.file_type ();
 	
+	let _is_symlink = _kind_symlink.is_symlink ();
+	let _is_dir = _kind_follow.is_dir ();
+	let _is_file = _kind_follow.is_file ();
+	let _is_hidden = (_name.len () > 1) && (_name.as_bytes () [0] == b'.');
+	
 	let _entry = fsas::Entry {
 			path : _path,
 			name : _name,
@@ -111,6 +125,10 @@ fn build_entry (_entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
 			metadata_symlink : _metadata_symlink,
 			kind_follow : _kind_follow,
 			metadata_follow : _metadata_follow,
+			is_hidden : _is_hidden,
+			is_symlink : _is_symlink,
+			is_dir : _is_dir,
+			is_file : _is_file,
 		};
 	
 	// FIXME:  Sanity checks!

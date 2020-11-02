@@ -13,22 +13,10 @@ pub struct Entry {
 	pub kind_symlink : fs::FileType,
 	pub metadata_follow : fs::Metadata,
 	pub metadata_symlink : fs::Metadata,
-}
-
-
-impl Entry {
-	
-	pub fn is_symlink (&self) -> bool {
-		return self.kind_symlink.is_symlink ();
-	}
-	
-	pub fn is_dir (&self) -> bool {
-		return self.kind_follow.is_dir ();
-	}
-	
-	pub fn is_file (&self) -> bool {
-		return self.kind_follow.is_file ();
-	}
+	pub is_symlink : bool,
+	pub is_file : bool,
+	pub is_dir : bool,
+	pub is_hidden : bool,
 }
 
 
@@ -49,8 +37,10 @@ pub struct IndexDecision {
 
 pub struct FilterRules {
 	pub rules : Vec<FilterRule>,
-	pub skip_hidden : bool,
-	pub recurse_symlinks : bool,
+	pub symlinks_collect : bool,
+	pub symlinks_recurse : bool,
+	pub hidden_collect : bool,
+	pub hidden_recurse : bool,
 }
 
 pub enum FilterRule {

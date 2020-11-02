@@ -5,24 +5,16 @@ use crate::prelude::*;
 
 
 
-impl fsas::IndexFilter for () {
-	
-	fn filter (&self, _entry : &fsas::Entry) -> Outcome<fsas::IndexDecision> {
-		Ok (fsas::IndexDecision { collect : true, recurse : true })
-	}
-}
-
-
-
-
 impl fsas::FilterRules {
 	
 	pub fn new () -> Self {
 		
 		return Self {
 				rules : Vec::new (),
-				skip_hidden : true,
-				recurse_symlinks : false,
+				symlinks_collect : true,
+				symlinks_recurse : true,
+				hidden_collect : false,
+				hidden_recurse : false,
 			};
 	}
 }
@@ -34,34 +26,41 @@ impl fsas::IndexFilter for fsas::FilterRules {
 	
 	fn filter (&self, _entry : &fsas::Entry) -> Outcome<fsas::IndexDecision> {
 		
-		if (_entry.name.len () > 1) && (_entry.name.as_bytes () [0] == b'.') {
-			if self.skip_hidden {
-				return Ok (fsas::IndexDecision { collect : false, recurse : false });
-			}
-		}
-		
 		let mut _collect = true;
 		let mut _recurse = true;
 		
-		for _rule in &self.rules {
-			match _rule.filter (_entry) ? {
-				Some (true) =>
-					break,
-				Some (false) => {
-					_collect = false;
-					_recurse = false;
-					break;
+		if _entry.is_symlink {
+			_collect &= self.symlinks_collect;
+			_collect &= self.symlinks_recurse;
+		}
+		
+		if _entry.is_hidden {
+			_collect &= self.hidden_collect;
+			_recurse &= self.hidden_recurse;
+		}
+		
+		if _collect || _recurse {
+			for _rule in &self.rules {
+				match _rule.filter (_entry) ? {
+					Some (true) =>
+						break,
+					Some (false) => {
+						_collect &= false;
+						_recurse &= false;
+						break;
+					}
+					None =>
+						(),
 				}
-				None =>
-					(),
 			}
 		}
 		
-		if ! self.recurse_symlinks && _entry.is_symlink () && _entry.is_dir () {
-			_recurse = false;
-		}
+		let _decision = fsas::IndexDecision {
+				collect : _collect,
+				recurse : _recurse,
+			};
 		
-		return Ok (fsas::IndexDecision { collect : _collect, recurse : _recurse });
+		return Ok (_decision);
 	}
 }
 
