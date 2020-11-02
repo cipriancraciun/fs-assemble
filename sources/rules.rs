@@ -94,9 +94,18 @@ pub enum TargetRule {
 
 pub enum Selector {
 	
-	Exact (String),
-	Glob (String),
-	Regex (String),
+	Exact {
+		pattern : String,
+		name_only : bool,
+	},
+	Glob {
+		pattern : String,
+		name_only : bool,
+	},
+	Regex {
+		pattern : String,
+		name_only : bool,
+	},
 }
 
 
