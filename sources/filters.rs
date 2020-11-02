@@ -5,7 +5,7 @@ use crate::prelude::*;
 
 
 
-impl fsas::FilterRules {
+impl fsas::IndexRules {
 	
 	pub fn new () -> Self {
 		
@@ -22,7 +22,7 @@ impl fsas::FilterRules {
 
 
 
-impl fsas::IndexFilter for fsas::FilterRules {
+impl fsas::IndexFilter for fsas::IndexRules {
 	
 	fn filter (&self, _entry : &fsas::Entry) -> Outcome<fsas::IndexDecision> {
 		
@@ -67,20 +67,20 @@ impl fsas::IndexFilter for fsas::FilterRules {
 
 
 
-impl fsas::FilterRule {
+impl fsas::IndexRule {
 	
 	pub fn filter (&self, _entry : &fsas::Entry) -> Outcome<Option<bool>> {
 		
 		match self {
 			
-			fsas::FilterRule::Include { selector : _selector } =>
+			fsas::IndexRule::Include { selector : _selector } =>
 				if _selector.matches (_entry) ? {
 					Ok (Some (true))
 				} else {
 					Ok (None)
 				},
 			
-			fsas::FilterRule::Exclude { selector : _selector } =>
+			fsas::IndexRule::Exclude { selector : _selector } =>
 				if _selector.matches (_entry) ? {
 					Ok (Some (false))
 				} else {
@@ -91,21 +91,105 @@ impl fsas::FilterRule {
 }
 
 
-impl fsas::Selector {
+
+
+impl fsas::EntrySelector {
 	
 	pub fn matches (&self, _entry : &fsas::Entry) -> Outcome<bool> {
 		
 		match self {
 			
-			fsas::Selector::Exact { pattern : _pattern, name_only : _name_only } =>
-				if *_name_only {
-					Ok (OsStr::eq (_pattern.as_ref (), &_entry.name))
-				} else {
-					Ok (OsStr::eq (_pattern.as_ref (), &_entry.path))
-				},
+			fsas::EntrySelector::Always =>
+				return Ok (true),
 			
-			_ =>
-				fail! (0x658d0967, "not implemented"),
+			fsas::EntrySelector::Never =>
+				return Ok (false),
+			
+			fsas::EntrySelector::Matches (_matcher) =>
+				return _matcher.matches (_entry),
+			
+			fsas::EntrySelector::NotMatches (_matcher) =>
+				return _matcher.matches (_entry) .map (|_matches| !_matches),
+			
+			fsas::EntrySelector::Any (_selectors) => {
+				for _selector in _selectors {
+					if _selector.matches (_entry) ? {
+						return Ok (true);
+					}
+				}
+				return Ok (false);
+			}
+			
+			fsas::EntrySelector::All (_selectors) => {
+				for _selector in _selectors {
+					if ! _selector.matches (_entry) ? {
+						return Ok (false);
+					}
+				}
+				return Ok (true);
+			}
+			
+			fsas::EntrySelector::None (_selectors) => {
+				for _selector in _selectors {
+					if _selector.matches (_entry) ? {
+						return Ok (false);
+					}
+				}
+				return Ok (true);
+			}
+		}
+	}
+}
+
+
+
+
+impl fsas::EntryMatcher {
+	
+	pub fn matches (&self, _entry : &fsas::Entry) -> Outcome<bool> {
+		
+		match self {
+			
+			fsas::EntryMatcher::Path (_pattern) =>
+				_pattern.matches (&_entry.path),
+			fsas::EntryMatcher::Name (_pattern) =>
+				_pattern.matches (&_entry.name),
+			
+			fsas::EntryMatcher::IsSymlink =>
+				Ok (_entry.is_symlink),
+			fsas::EntryMatcher::IsDir =>
+				Ok (_entry.is_dir),
+			fsas::EntryMatcher::IsFile =>
+				Ok (_entry.is_file),
+			fsas::EntryMatcher::IsHidden =>
+				Ok (_entry.is_hidden),
+		}
+	}
+}
+
+
+
+
+impl fsas::Pattern {
+	
+	pub fn matches (&self, _input : &OsStr) -> Outcome<bool> {
+		
+		match self {
+			
+			fsas::Pattern::Exact (_pattern) =>
+				Ok (OsStr::eq (_input, _pattern)),
+			fsas::Pattern::Prefix (_pattern) =>
+				Ok (_input.as_bytes () .starts_with (_pattern.as_bytes ())),
+			fsas::Pattern::Suffix (_pattern) =>
+				Ok (_input.as_bytes () .ends_with (_pattern.as_bytes ())),
+			
+			fsas::Pattern::Glob (_pattern) =>
+				// FIXME:  Use `globset::Candidate` to amortize preprocessing cost!
+				Ok (_pattern.is_match (_input)),
+			
+			fsas::Pattern::Regex (_pattern) =>
+				Ok (_pattern.is_match (_input.as_bytes ())),
+			
 		}
 	}
 }

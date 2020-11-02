@@ -49,16 +49,16 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 		
 		if ! _decision.recurse {
 			if _entry.is_dir {
-				log_debug! (0xb64e6f82, "dropping `{}`;", _entry.path.display ());
+				log_debug! (0xb64e6f82, "dropping `{}`;", _entry.path_display ());
 				_walker.skip_current_dir ();
 			}
 		}
 		
 		if _decision.collect {
-			log_debug! (0xc23bcdc0, "including `{}`;", _entry.path.display ());
+			log_debug! (0xc23bcdc0, "including `{}`;", _entry.path_display ());
 			_collector.push (_entry);
 		} else {
-			log_debug! (0x08b79f02, "excluding `{}`;", _entry.path.display ());
+			log_debug! (0x08b79f02, "excluding `{}`;", _entry.path_display ());
 		}
 	}
 	
@@ -118,7 +118,7 @@ fn build_entry (_entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
 	let _is_hidden = (_name.len () > 1) && (_name.as_bytes () [0] == b'.');
 	
 	let _entry = fsas::Entry {
-			path : _path,
+			path : _path.into (),
 			name : _name,
 			depth : _depth,
 			kind_symlink : _kind_symlink,

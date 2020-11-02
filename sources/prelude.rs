@@ -8,6 +8,8 @@ pub use ::std::io;
 pub use ::std::path;
 pub use ::std::process;
 
+pub use ::globset;
+pub use ::regex::bytes as regexb;
 pub use ::walkdir;
 
 

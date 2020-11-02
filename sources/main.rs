@@ -7,8 +7,10 @@ use crate::prelude::*;
 
 fn main_0 (_script : &Path, _source : &Path, _target : &Path) -> Result<(), io::Error> {
 	
-	let mut _filter = fsas::FilterRules::new ();
-	_filter.rules.push (fsas::FilterRule::Exclude { selector : fsas::Selector::Exact { pattern : "target".into (), name_only : true } });
+	let mut _filter = fsas::IndexRules::new ();
+	_filter.rules.push (fsas::IndexRule::Exclude {
+			selector : fsas::EntrySelector::Matches (fsas::EntryMatcher::Name (fsas::Pattern::Exact ("target".into ()))),
+		});
 	
 	let mut _index = Vec::with_capacity (16 * 1024);
 	

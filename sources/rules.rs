@@ -6,7 +6,7 @@ use crate::prelude::*;
 
 
 pub struct Entry {
-	pub path : PathBuf,
+	pub path : OsString,
 	pub name : OsString,
 	pub depth : usize,
 	pub kind_follow : fs::FileType,
@@ -17,6 +17,15 @@ pub struct Entry {
 	pub is_file : bool,
 	pub is_dir : bool,
 	pub is_hidden : bool,
+}
+
+
+impl Entry {
+	
+	pub fn path_display (&self) -> path::Display<'_> {
+		let _path : &Path = self.path.as_ref ();
+		return _path.display ();
+	}
 }
 
 
@@ -35,22 +44,57 @@ pub struct IndexDecision {
 
 
 
-pub struct FilterRules {
-	pub rules : Vec<FilterRule>,
+pub struct IndexRules {
+	pub rules : Vec<IndexRule>,
 	pub symlinks_collect : bool,
 	pub symlinks_recurse : bool,
 	pub hidden_collect : bool,
 	pub hidden_recurse : bool,
 }
 
-pub enum FilterRule {
+pub enum IndexRule {
 	
 	Include {
-		selector : Selector,
+		selector : EntrySelector,
 	},
 	Exclude {
-		selector : Selector,
+		selector : EntrySelector,
 	},
+}
+
+
+
+
+pub enum EntrySelector {
+	Always,
+	Never,
+	Matches (EntryMatcher),
+	NotMatches (EntryMatcher),
+	Any (Vec<EntrySelector>),
+	All (Vec<EntrySelector>),
+	None (Vec<EntrySelector>),
+}
+
+
+pub enum EntryMatcher {
+	
+	Path (Pattern),
+	Name (Pattern),
+	
+	IsSymlink,
+	IsDir,
+	IsFile,
+	IsHidden,
+	
+}
+
+
+pub enum Pattern {
+	Exact (OsString),
+	Prefix (OsString),
+	Suffix (OsString),
+	Glob (globset::GlobSet),
+	Regex (regexb::RegexSet),
 }
 
 
@@ -59,48 +103,39 @@ pub enum FilterRule {
 pub enum TargetRule {
 	
 	Protect {
-		selector : Selector,
+		selector : EntrySelector,
 	},
 	
 	Delete {
-		selector : Selector,
+		selector : EntrySelector,
 	},
 	
-	Mkdir {
-		path : String,
+	MkDir {
+		path : OsString,
 	},
 	
-	CopyFlat {
-		source : Selector,
-		target : String,
+	Copy {
+		source : OsString,
+		target : OsString,
+	},
+	
+	CopyFlatten {
+		source : EntrySelector,
+		target : OsString,
 	},
 	
 	CopyRename {
-		source : Selector,
+		source : EntrySelector,
 		renaming : Renaming,
-	}
-}
-
-
-pub enum Selector {
-	
-	Exact {
-		pattern : String,
-		name_only : bool,
-	},
-	Glob {
-		pattern : String,
-		name_only : bool,
-	},
-	Regex {
-		pattern : String,
-		name_only : bool,
 	},
 }
 
 
 pub enum Renaming {
 	
-	Regex (String, String),
+	Regex {
+		pattern : regexb::Regex,
+		replacement : OsString,
+	},
 }
 
