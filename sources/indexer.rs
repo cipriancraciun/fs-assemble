@@ -29,7 +29,7 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 		
 		log_trace! (0xa54d097c, "indexing `{}`...", _entry.path () .display ());
 		
-		let _entry = match build_entry (_entry) {
+		let _entry = match build_entry (_root, _entry) {
 			Ok (_entry) =>
 				_entry,
 			Err (_error) => {
@@ -68,12 +68,27 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 
 
 
-fn build_entry (_entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
+fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
 	
 	let _is_dir = _entry.file_type () .is_dir ();
 	let _is_symlink = _entry.path_is_symlink ();
 	let _depth = _entry.depth ();
 	let _path = _entry.into_path ();
+	
+	let _relative_path = match _path.strip_prefix (_root) {
+		Ok (_stripped_path) =>
+			if _stripped_path.has_root () {
+				OsString::from (_stripped_path)
+			} else {
+				let _stripped_path = _stripped_path.as_os_str ();
+				let mut _relative_path = OsString::with_capacity (1 + _stripped_path.len ());
+				_relative_path.push (path::Component::RootDir.as_os_str ());
+				_relative_path.push (_stripped_path);
+				_relative_path
+			}
+		Err (_error) =>
+			fail! (0x79d3baaa, "invalid stripping for path `{}`", _path.display ()),
+	};
 	
 	let _name : OsString = match _path.file_name () {
 		Some (_name) if _name == "" =>
@@ -118,7 +133,7 @@ fn build_entry (_entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
 	let _is_hidden = (_name.len () > 1) && (_name.as_bytes () [0] == b'.');
 	
 	let _entry = fsas::Entry {
-			path : _path.into (),
+			path : _relative_path,
 			name : _name,
 			depth : _depth,
 			kind_symlink : _kind_symlink,
