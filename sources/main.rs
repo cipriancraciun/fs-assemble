@@ -5,14 +5,27 @@ use crate::prelude::*;
 
 
 
-fn main_0 (_script : &Path, _source : &Path, _target : &Path) -> Result<(), io::Error> {
+fn main_0 (_script : &Path, _source_path : &Path, _target_path : &Path) -> Result<(), io::Error> {
 	
-	let mut _filter = fsas::IndexRules::new ();
-	_filter.push_exclude (fsas::EntrySelector::if_matches_name (fsas::Pattern::exact ("target")));
+	let mut _source_filter = fsas::IndexRules::new ();
+	_source_filter.push_exclude (fsas::EntrySelector::if_matches_name (fsas::Pattern::exact ("target")));
 	
-	let mut _index = Vec::with_capacity (16 * 1024);
+	let mut _target_filter = fsas::IndexRules::new ();
 	
-	fsas::index (_source, &_filter, &mut _index) ?;
+	let mut _source_entries = Vec::with_capacity (16 * 1024);
+	let mut _target_entries = Vec::with_capacity (16 * 1024);
+	
+	log_cut! ();
+	log_notice! (0x787ec493, "indexing source path `{}`...", _source_path.display ());
+	fsas::index (_source_path, &_source_filter, &mut _source_entries) ?;
+	_source_entries.sort_by (|_left, _right| OsString::cmp (&_left.path, &_right.path));
+	log_cut! ();
+	
+	log_cut! ();
+	log_notice! (0xcb4b5581, "indexing target path `{}`...", _target_path.display ());
+	fsas::index (_target_path, &_target_filter, &mut _target_entries) ?;
+	_target_entries.sort_by (|_left, _right| OsString::cmp (&_left.path, &_right.path));
+	log_cut! ();
 	
 	fail! (0x84c61b84, "not implemented!");
 }
