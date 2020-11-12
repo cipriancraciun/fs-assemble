@@ -6,6 +6,7 @@ use crate::prelude::*;
 
 
 pub struct Entry {
+	pub path_0 : PathBuf,
 	pub path : OsString,
 	pub name : OsString,
 	pub depth : usize,
@@ -17,15 +18,6 @@ pub struct Entry {
 	pub is_file : bool,
 	pub is_dir : bool,
 	pub is_hidden : bool,
-}
-
-
-impl Entry {
-	
-	pub fn path_display (&self) -> path::Display<'_> {
-		let _path : &Path = self.path.as_ref ();
-		return _path.display ();
-	}
 }
 
 

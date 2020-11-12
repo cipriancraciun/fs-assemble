@@ -195,3 +195,18 @@ impl Pattern {
 	}
 }
 
+
+
+
+impl Entry {
+	
+	pub fn path_0_display (&self) -> path::Display<'_> {
+		return self.path_0.display ();
+	}
+	
+	pub fn path_display (&self) -> path::Display<'_> {
+		let _path : &Path = self.path.as_ref ();
+		return _path.display ();
+	}
+}
+
