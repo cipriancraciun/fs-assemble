@@ -5,23 +5,6 @@ use crate::prelude::*;
 
 
 
-impl fsas::IndexRules {
-	
-	pub fn new () -> Self {
-		
-		return Self {
-				rules : Vec::new (),
-				symlinks_collect : true,
-				symlinks_recurse : true,
-				hidden_collect : false,
-				hidden_recurse : false,
-			};
-	}
-}
-
-
-
-
 impl fsas::IndexFilter for fsas::IndexRules {
 	
 	fn filter (&self, _entry : &fsas::Entry) -> Outcome<fsas::IndexDecision> {
