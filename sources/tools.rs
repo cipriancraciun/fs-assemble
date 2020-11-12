@@ -24,7 +24,31 @@ pub fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt::Displa
 		(_, _) =>
 			eprintln! ("{} [{:08x}]  {}", _slug, _code, _message),
 	}
+	unsafe {
+		_log_empty = false;
+		_log_cut_last = false;
+	}
 }
+
+pub fn log_cut () -> () {
+	unsafe {
+		if _log_cut_last {
+			return;
+		}
+	}
+	eprintln! ("[--]");
+	unsafe {
+		_log_empty = false;
+		_log_cut_last = true;
+	}
+}
+
+#[ allow (non_upper_case_globals) ]
+static mut _log_empty : bool = true;
+#[ allow (non_upper_case_globals) ]
+static mut _log_cut_last : bool = false;
+
+
 
 
 pub fn error (_code : u32, _message : impl fmt::Display) -> io::Error {

@@ -39,3 +39,10 @@ log_define! (log_information, "[ii]", 30000);
 log_define! (log_debug, "[dd]", 20000);
 log_define! (log_trace, "[dd]", 10000);
 
+#[ allow (unused_macros) ]
+macro_rules! log_cut {
+	() => {
+		$crate::tools::log_cut ();
+	};
+}
+
