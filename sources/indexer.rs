@@ -49,16 +49,16 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 		
 		if ! _decision.recurse {
 			if _entry.is_dir {
-				log_trace! (0xb64e6f82, "dropping `{}`;", _entry.path_0_display ());
+				log_trace! (0xb64e6f82, "dropping `{}`;", _entry.path_display ());
 				_walker.skip_current_dir ();
 			}
 		}
 		
 		if _decision.collect {
-			log_trace! (0xc23bcdc0, "including `{}`;", _entry.path_0_display ());
+			log_trace! (0xc23bcdc0, "including `{}`;", _entry.path_display ());
 			_collector.push (_entry);
 		} else {
-			log_trace! (0x08b79f02, "excluding `{}`;", _entry.path_0_display ());
+			log_trace! (0x08b79f02, "excluding `{}`;", _entry.path_display ());
 		}
 	}
 	
@@ -148,8 +148,18 @@ fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<fsas::Entr
 	let _is_file = _kind_follow.is_file ();
 	let _is_hidden = (_name.len () > 1) && (_name.as_bytes () [0] == b'.');
 	
+	let _link = if _is_symlink {
+		match fs::read_link (&_path) {
+			Ok (_link) =>
+				Some (_link.into ()),
+			Err (_error) =>
+				fail! (0xa2a172a8, "failed `readlink` for path `{}`:  {}", _path.display (), _error),
+		}
+	} else {
+		None
+	};
+	
 	let _entry = fsas::Entry {
-			path_0 : _path,
 			path : _relative_path,
 			name : _name,
 			depth : _depth,
@@ -161,6 +171,7 @@ fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<fsas::Entr
 			is_symlink : _is_symlink,
 			is_dir : _is_dir,
 			is_file : _is_file,
+			link : _link,
 		};
 	
 	// FIXME:  Sanity checks!

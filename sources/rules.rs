@@ -8,7 +8,6 @@ use crate::prelude::*;
 #[ derive (Clone) ]
 #[ derive (Debug) ]
 pub struct Entry {
-	pub path_0 : PathBuf,
 	pub path : OsString,
 	pub name : OsString,
 	pub depth : usize,
@@ -20,6 +19,7 @@ pub struct Entry {
 	pub is_file : bool,
 	pub is_dir : bool,
 	pub is_hidden : bool,
+	pub link : Option<OsString>,
 }
 
 
@@ -125,7 +125,7 @@ pub enum TargetRule {
 		target : EntrySelector,
 	},
 	
-	Clean {
+	Unlink {
 		target : EntrySelector,
 	},
 	
@@ -185,7 +185,7 @@ pub enum Renaming {
 
 #[ derive (Clone) ]
 #[ derive (Debug) ]
-pub struct TargetEntry {
+pub struct TargetDescriptor {
 	pub path : OsString,
 	pub operation : TargetOperation,
 }
@@ -199,20 +199,27 @@ pub enum TargetOperation {
 		existing : Entry,
 	},
 	
-	Copy {
+	Unlink {
 		existing : Entry,
+	},
+	
+	Copy {
+		source : Entry,
+		existing : Option<Entry>,
 	},
 	
 	Symlink {
-		existing : Entry,
+		source : Entry,
+		existing : Option<Entry>,
 	},
 	
-	MakeDir,
+	MakeDir {
+		existing : Option<Entry>,
+	},
 	
 	MakeSymlink {
 		link : OsString,
+		existing : Option<Entry>,
 	},
-	
-	Unlink,
 }
 

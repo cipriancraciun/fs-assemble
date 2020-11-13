@@ -223,36 +223,40 @@ impl TargetRules {
 	}
 	
 	
-	pub fn push_protect (&mut self, _target : EntrySelector) -> &mut Self {
+	pub fn push_protect (&mut self, _target : &str) -> &mut Self {
+		let _target = EntrySelector::if_matches_path (Pattern::glob (_target) .unwrap ());
 		self.rules.push (TargetRule::Protect { target : _target });
 		self
 	}
 	
-	pub fn push_clean (&mut self, _target : EntrySelector) -> &mut Self {
-		self.rules.push (TargetRule::Clean { target : _target });
+	pub fn push_unlink (&mut self, _target : &str) -> &mut Self {
+		let _target = EntrySelector::if_matches_path (Pattern::glob (_target) .unwrap ());
+		self.rules.push (TargetRule::Unlink { target : _target });
 		self
 	}
 	
 	
 	pub fn push_copy (&mut self, _source : &str, _target : &str) -> &mut Self {
-		let _source = EntrySelector::if_matches_path (Pattern::exact (_source));
+		let _source = EntrySelector::if_matches_path (Pattern::glob (_source) .unwrap ());
 		self.rules.push (TargetRule::Copy { source : _source.into (), target : _target.into () });
 		self
 	}
 	
-	pub fn push_copy_flatten (&mut self, _source : EntrySelector, _target : &str) -> &mut Self {
+	pub fn push_copy_flatten (&mut self, _source : &str, _target : &str) -> &mut Self {
+		let _source = EntrySelector::if_matches_path (Pattern::glob (_source) .unwrap ());
 		self.rules.push (TargetRule::CopyFlatten { source : _source, target : _target.into () });
 		self
 	}
 	
 	
 	pub fn push_symlink (&mut self, _source : &str, _target : &str) -> &mut Self {
-		let _source = EntrySelector::if_matches_path (Pattern::exact (_source));
+		let _source = EntrySelector::if_matches_path (Pattern::glob (_source) .unwrap ());
 		self.rules.push (TargetRule::Symlink { source : _source.into (), target : _target.into () });
 		self
 	}
 	
-	pub fn push_symlink_flatten (&mut self, _source : EntrySelector, _target : &str) -> &mut Self {
+	pub fn push_symlink_flatten (&mut self, _source : &str, _target : &str) -> &mut Self {
+		let _source = EntrySelector::if_matches_path (Pattern::glob (_source) .unwrap ());
 		self.rules.push (TargetRule::SymlinkFlatten { source : _source, target : _target.into () });
 		self
 	}
@@ -274,9 +278,14 @@ impl TargetRules {
 
 impl Entry {
 	
-	pub fn path_0_display (&self) -> path::Display<'_> {
-		return self.path_0.display ();
+	pub fn path_display (&self) -> path::Display<'_> {
+		let _path : &Path = self.path.as_ref ();
+		return _path.display ();
 	}
+}
+
+
+impl TargetDescriptor {
 	
 	pub fn path_display (&self) -> path::Display<'_> {
 		let _path : &Path = self.path.as_ref ();

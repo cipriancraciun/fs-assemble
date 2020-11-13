@@ -5,7 +5,7 @@ use crate::prelude::*;
 
 
 
-fn main_0 (_script : &Path, _source_path : &Path, _target_path : &Path) -> Result<(), io::Error> {
+fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Result<(), io::Error> {
 	
 	use fsas::*;
 	
@@ -24,28 +24,30 @@ fn main_0 (_script : &Path, _source_path : &Path, _target_path : &Path) -> Resul
 			.push_symlink ("/Cargo.lock", "/Cargo.lock")
 			.push_copy ("/sources", "/sources")
 			.push_make_dir ("/1/2/3/4")
-			.push_protect (EntrySelector::if_matches_path (Pattern::glob ("/target/**") ?))
-			.push_clean (EntrySelector::Always);
+			.push_protect ("/target/**")
+			.push_make_symlink ("/target/null", "/dev/null")
+			.push_unlink ("/**");
 	
 	
 	log_cut! ();
-	log_notice! (0x787ec493, "indexing source path `{}`...", _source_path.display ());
+	log_notice! (0x787ec493, "indexing source path `{}`...", _source_root.display ());
 	let mut _source_entries = Vec::with_capacity (16 * 1024);
-	index (_source_path, &_source_filter, &mut _source_entries) ?;
+	index (_source_root, &_source_filter, &mut _source_entries) ?;
 	log_cut! ();
 	
 	log_cut! ();
-	log_notice! (0xcb4b5581, "indexing target path `{}`...", _target_path.display ());
+	log_notice! (0xcb4b5581, "indexing target path `{}`...", _target_root.display ());
 	let mut _target_entries = Vec::with_capacity (16 * 1024);
-	index (_target_path, &_target_filter, &mut _target_entries) ?;
+	index (_target_root, &_target_filter, &mut _target_entries) ?;
 	log_cut! ();
 	
 	log_cut! ();
 	log_notice! (0x7827e63b, "planning...");
-	let _target_entries = plan (&_target_rules, _source_entries, _target_entries) ?;
+	let _target_entries = plan (&_target_rules, _source_root, _source_entries, _target_root, _target_entries) ?;
 	for _target_entry in _target_entries.iter () {
 		log_debug! (0xb7c38713, "{:?}", _target_entry);
 	}
+	
 	
 	fail! (0x84c61b84, "not implemented!");
 }
