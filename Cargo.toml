@@ -12,6 +12,8 @@ default = []
 regex = "*"
 globset = "*"
 walkdir = "*"
+pathdiff = "*"
+path-clean = "*"
 
 [[bin]]
 name = "fs-assemble"
