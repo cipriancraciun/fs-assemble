@@ -17,7 +17,7 @@ impl IndexRules {
 				symlinks_recurse : true,
 				hidden_collect : false,
 				hidden_recurse : false,
-				fallback_collect : false,
+				fallback_collect : true,
 				fallback_recurse : true,
 			};
 	}

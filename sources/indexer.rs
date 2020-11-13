@@ -49,16 +49,16 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 		
 		if ! _decision.recurse {
 			if _entry.is_dir {
-				log_debug! (0xb64e6f82, "dropping `{}`;", _entry.path_0_display ());
+				log_trace! (0xb64e6f82, "dropping `{}`;", _entry.path_0_display ());
 				_walker.skip_current_dir ();
 			}
 		}
 		
 		if _decision.collect {
-			log_debug! (0xc23bcdc0, "including `{}`;", _entry.path_0_display ());
+			log_trace! (0xc23bcdc0, "including `{}`;", _entry.path_0_display ());
 			_collector.push (_entry);
 		} else {
-			log_debug! (0x08b79f02, "excluding `{}`;", _entry.path_0_display ());
+			log_trace! (0x08b79f02, "excluding `{}`;", _entry.path_0_display ());
 		}
 	}
 	

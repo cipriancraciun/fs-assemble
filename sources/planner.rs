@@ -16,9 +16,9 @@ pub fn plan (_rules : &TargetRules, _sources : Vec<Entry>, _targets : Vec<Entry>
 	let mut _sources_unhandled = BTreeMap::new ();
 	
 	let mut _targets_existing = fsas::build_tree (_targets) ?;
-	let mut _targets_planned = Vec::new ();
-	let mut _targets_unhandled = Vec::new ();
+	let mut _targets_unhandled = BTreeMap::new ();
 	
+	let mut _targets_planned = Vec::new ();
 	
 	// ----
 	
@@ -151,7 +151,7 @@ pub fn plan (_rules : &TargetRules, _sources : Vec<Entry>, _targets : Vec<Entry>
 			}
 			
 			if ! _handled {
-				_targets_unhandled.push (_entry.clone ());
+				_targets_unhandled.insert (_entry.path.clone (), _entry.clone ());
 			}
 		}
 	}
@@ -210,25 +210,34 @@ pub fn plan (_rules : &TargetRules, _sources : Vec<Entry>, _targets : Vec<Entry>
 		let mut _targets_planned_extended = Vec::new ();
 		
 		for _target_0 in _targets_planned.iter () {
-			match &_target_0.operation {
+			
+			let _source_0 = match &_target_0.operation {
 				
 				TargetOperation::Copy { existing : _source_0 } =>
 					if _source_0.is_dir {
-						for (_, _source_1) in _sources_existing.range::<OsString, _> ((Bound::Excluded (&_source_0.path), Bound::Unbounded)) {
-							if ! Path::new (&_source_1.path) .starts_with (&_source_0.path) {
-								break;
-							}
-							let _target_1_path = Path::new (&_target_0.path) .join (Path::new (&_source_1.path) .strip_prefix (&_source_0.path) .unwrap ()) .into ();
-							let _target_1 = TargetEntry {
-									path : _target_1_path,
-									operation : TargetOperation::Copy { existing : _source_1.clone () },
-								};
-							_targets_planned_extended.push (_target_1);
-						}
-					},
+						_source_0
+					} else {
+						continue;
+					}
 				
 				_ =>
-					(),
+					continue,
+			};
+			
+			for (_, _source_1) in _sources_existing.range::<OsString, _> ((Bound::Excluded (&_source_0.path), Bound::Unbounded)) {
+				
+				if ! Path::new (&_source_1.path) .starts_with (&_source_0.path) {
+					break;
+				}
+				
+				_sources_unhandled.remove (&_source_1.path);
+				
+				let _target_1_path = Path::new (&_target_0.path) .join (Path::new (&_source_1.path) .strip_prefix (&_source_0.path) .unwrap ()) .into ();
+				let _target_1 = TargetEntry {
+						path : _target_1_path,
+						operation : TargetOperation::Copy { existing : _source_1.clone () },
+					};
+				_targets_planned_extended.push (_target_1);
 			}
 		}
 		
@@ -272,14 +281,48 @@ pub fn plan (_rules : &TargetRules, _sources : Vec<Entry>, _targets : Vec<Entry>
 	// ----
 	
 	
-	_targets_planned.sort_by (|_left, _right|  OsStr::cmp (&_left.path, &_right.path));
-	
-	for _target in _targets_planned.iter () {
-		log_debug! (0x096428c7, "{:?}", _target);
+	{
+		log_debug! (0x352f2f1c, "reconciling operations...");
+		
+		_targets_planned.sort_by (|_left, _right|  OsStr::cmp (&_left.path, &_right.path));
 	}
 	
 	
 	// ----
+	
+	
+	{
+		log_cut! ();
+		log_debug! (0x975bea76, "targets plan:");
+		for _target in _targets_planned.iter () {
+			log_debug! (0x096428c7, "* {:?}", _target);
+		}
+		log_cut! ();
+		
+		log_cut! ();
+		log_debug! (0xc1da0330, "sources unhandled:");
+		for _entry in _sources_unhandled.values () {
+			if _entry.depth == 0 {
+				continue;
+			}
+			log_debug! (0xef09d9c0, "* `{}`", _entry.path_display ());
+		}
+		log_cut! ();
+		
+		log_cut! ();
+		log_debug! (0xb9728c78, "targets unhandled:");
+		for _entry in _targets_unhandled.values () {
+			if _entry.depth == 0 {
+				continue;
+			}
+			log_debug! (0xfbb6fba3, "* `{}`", _entry.path_display ());
+		}
+		log_cut! ();
+	}
+	
+	
+	// ----
+	
 	
 	fail! (0x1d81ea47, "not implemented");
 }
