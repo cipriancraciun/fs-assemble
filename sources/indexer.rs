@@ -68,6 +68,22 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 
 
 
+pub fn build_tree (_entries : Vec<fsas::Entry>) -> Outcome<BTreeMap<OsString, fsas::Entry>> {
+	
+	let mut _tree = BTreeMap::new ();
+	
+	for _entry in _entries.into_iter () {
+		if let Some (_entry) = _tree.insert (_entry.path.clone (), _entry) {
+			fail! (0x4314750b, "unexpected duplicate path `{}`", _entry.path_display ());
+		}
+	}
+	
+	Ok (_tree)
+}
+
+
+
+
 fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
 	
 	let _is_dir = _entry.file_type () .is_dir ();

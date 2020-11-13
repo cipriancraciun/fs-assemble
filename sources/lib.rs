@@ -4,8 +4,9 @@
 mod macros;
 
 
-pub mod indexer;
 pub mod filters;
+pub mod indexer;
+pub mod planner;
 pub mod rules;
 
 mod main;

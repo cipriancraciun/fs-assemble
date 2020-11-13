@@ -7,25 +7,45 @@ use crate::prelude::*;
 
 fn main_0 (_script : &Path, _source_path : &Path, _target_path : &Path) -> Result<(), io::Error> {
 	
-	let mut _source_filter = fsas::IndexRules::new ();
-	_source_filter.push_exclude (fsas::EntrySelector::if_matches_name (fsas::Pattern::exact ("target")));
+	use fsas::*;
 	
-	let mut _target_filter = fsas::IndexRules::new ();
 	
-	let mut _source_entries = Vec::with_capacity (16 * 1024);
-	let mut _target_entries = Vec::with_capacity (16 * 1024);
+	let mut _source_filter = IndexRules::new_for_source ();
+	_source_filter
+			.push_exclude (EntrySelector::if_matches_path (Pattern::exact ("/.git")))
+			.push_exclude (EntrySelector::if_matches_path (Pattern::exact ("/target")));
+	
+	let mut _target_filter = IndexRules::new_for_target ();
+	
+	
+	let mut _target_rules = TargetRules::new ();
+	_target_rules
+			.push_copy ("/Cargo.toml", "/Cargo.toml")
+			.push_symlink ("/Cargo.lock", "/Cargo.lock")
+			.push_copy ("/sources", "/sources")
+			.push_make_dir ("/1/2/3/4")
+			.push_protect (EntrySelector::if_matches_path (Pattern::glob ("/target/**") ?))
+			.push_clean (EntrySelector::Always);
+	
 	
 	log_cut! ();
 	log_notice! (0x787ec493, "indexing source path `{}`...", _source_path.display ());
-	fsas::index (_source_path, &_source_filter, &mut _source_entries) ?;
-	_source_entries.sort_by (|_left, _right| OsString::cmp (&_left.path, &_right.path));
+	let mut _source_entries = Vec::with_capacity (16 * 1024);
+	index (_source_path, &_source_filter, &mut _source_entries) ?;
 	log_cut! ();
 	
 	log_cut! ();
 	log_notice! (0xcb4b5581, "indexing target path `{}`...", _target_path.display ());
-	fsas::index (_target_path, &_target_filter, &mut _target_entries) ?;
-	_target_entries.sort_by (|_left, _right| OsString::cmp (&_left.path, &_right.path));
+	let mut _target_entries = Vec::with_capacity (16 * 1024);
+	index (_target_path, &_target_filter, &mut _target_entries) ?;
 	log_cut! ();
+	
+	log_cut! ();
+	log_notice! (0x7827e63b, "planning...");
+	let _target_entries = plan (&_target_rules, _source_entries, _target_entries) ?;
+	for _target_entry in _target_entries.iter () {
+		log_debug! (0xb7c38713, "{:?}", _target_entry);
+	}
 	
 	fail! (0x84c61b84, "not implemented!");
 }
