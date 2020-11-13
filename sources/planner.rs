@@ -6,126 +6,25 @@ use crate::rules::*;
 
 
 
-pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>, _targets_root : &Path, _targets : Vec<Entry>) -> Outcome<Vec<TargetDescriptor>> {
+pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : EntryVec, _targets_root : &Path, _targets : EntryVec) -> Outcome<TargetDescriptorVec> {
 	
 	
 	// ----
 	
 	
 	let mut _sources_existing = fsas::build_tree (_sources) ?;
-	let mut _sources_handled = BTreeMap::new ();
-	let mut _sources_unhandled = BTreeMap::new ();
+	let mut _sources_handled = PathSet::new ();
 	
 	let mut _targets_existing = fsas::build_tree (_targets) ?;
-	let mut _targets_handled = BTreeMap::new ();
-	let mut _targets_unhandled = BTreeMap::new ();
+	let mut _targets_handled = PathSet::new ();
 	
-	let mut _targets_planned = Vec::new ();
+	let mut _targets_planned = TargetDescriptorVec::new ();
 	
 	
 	// ----
 	
 	
-	{
-		log_debug! (0x9f16c940, "sifting sources...");
-		
-		for _source in _sources_existing.values () {
-			
-			let mut _handled = false;
-			
-			for _rule in _rules.rules.iter () {
-				match _rule {
-					
-					
-					// NOTE:
-					//
-					//   If the source is a folder, then recursion happens at a later stage.
-					//   Also, if the source is a folder, it will later be transformed into a `MakeDir`.
-					//
-					//   In case of `CopyFlatten` or `CopyRename` if one selects a folder,
-					//   it won't be recursively "flattened", but instead recursively "coppied" as above.
-					
-					TargetRule::Copy { source : _selector, target : _target } =>
-						if _selector.matches (&_source) ? {
-							let _descriptor = TargetDescriptor {
-									path : _target.clone (),
-									existing : _targets_existing.get (_target) .cloned (),
-									operation : TargetOperation::Copy {
-											source : _source.clone (),
-										},
-								};
-							_targets_planned.push (_descriptor);
-							_handled = true;
-						}
-					
-					TargetRule::CopyFlatten { source : _selector, target : _target } =>
-						if _selector.matches (&_source) ? {
-							let _target = Path::new (_target) .join (&_source.name) .into ();
-							let _descriptor = TargetDescriptor {
-									existing : _targets_existing.get (&_target) .cloned (),
-									path : _target,
-									operation : TargetOperation::Copy {
-											source : _source.clone (),
-										},
-								};
-							_targets_planned.push (_descriptor);
-							_handled = true;
-						}
-					
-					TargetRule::CopyRename { .. } =>
-						fail! (0xb2bb5d6d, "not implemented!"),
-					
-					
-					// NOTE:  If  the source is a folder, it won't be recursed, but instead a symlink created to it.
-					
-					TargetRule::Symlink { source : _selector, target : _target } =>
-						if _selector.matches (&_source) ? {
-							let _descriptor = TargetDescriptor {
-									path : _target.clone (),
-									existing : _targets_existing.get (_target) .cloned (),
-									operation : TargetOperation::Symlink {
-											source : _source.clone (),
-										},
-								};
-							_targets_planned.push (_descriptor);
-							_handled = true;
-						}
-					
-					TargetRule::SymlinkFlatten { source : _selector, target : _target } =>
-						if _selector.matches (&_source) ? {
-							let _target = Path::new (_target) .join (&_source.name) .into ();
-							let _descriptor = TargetDescriptor {
-									existing : _targets_existing.get (&_target) .cloned (),
-									path : _target,
-									operation : TargetOperation::Symlink {
-											source : _source.clone (),
-										},
-								};
-							_targets_planned.push (_descriptor);
-							_handled = true;
-						}
-					
-					TargetRule::SymlinkRename { .. } =>
-						fail! (0x3d416349, "not implemented!"),
-					
-					
-					TargetRule::Protect { .. } |
-					TargetRule::Unlink { .. } =>
-						(),
-					
-					TargetRule::MakeDir { .. } |
-					TargetRule::MakeSymlink { .. } =>
-						(),
-				}
-			}
-			
-			if _handled {
-				_sources_handled.insert (_source.path.clone (), _source);
-			} else {
-				_sources_unhandled.insert (_source.path.clone (), _source);
-			}
-		}
-	}
+	_targets_planned.extend (sift_sources (_rules, &_sources_existing, &_targets_existing, &mut _sources_handled) ?);
 	
 	
 	// ----
@@ -184,9 +83,7 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 			}
 			
 			if _handled {
-				_targets_handled.insert (_target.path.clone (), _target);
-			} else {
-				_targets_unhandled.insert (_target.path.clone (), _target);
+				_targets_handled.insert (_target.path.clone ());
 			}
 		}
 	}
@@ -247,7 +144,7 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 	{
 		log_debug! (0x62d40e83, "extending copy...");
 		
-		let mut _targets_planned_extended = Vec::new ();
+		let mut _targets_planned_extended = TargetDescriptorVec::new ();
 		
 		for _target_1 in _targets_planned.iter () {
 			
@@ -270,7 +167,7 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 					break;
 				}
 				
-				_sources_unhandled.remove (&_source_2.path);
+				_sources_handled.insert (_source_2.path.clone ());
 				
 				let _target_2_path = Path::new (&_target_1.path) .join (Path::new (&_source_2.path) .strip_prefix (&_source_1.path) .unwrap ()) .into ();
 				let _target_2 = TargetDescriptor {
@@ -294,10 +191,10 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 	{
 		log_debug! (0x1e7e28ce, "extending targets...");
 		
-		let mut _targets_protect = BTreeMap::new ();
-		let mut _targets_unlink = BTreeMap::new ();
-		let mut _targets_create = BTreeMap::new ();
-		let mut _targets_mkdir = BTreeSet::new ();
+		let mut _targets_protect = TargetDescriptorMap::new ();
+		let mut _targets_unlink = TargetDescriptorMap::new ();
+		let mut _targets_create = TargetDescriptorMap::new ();
+		let mut _targets_mkdir = PathSet::new ();
 		
 		for _descriptor in _targets_planned.drain (..) {
 			
@@ -382,8 +279,8 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 	// ----
 	
 	
-	let mut _targets_unlink = BTreeMap::new ();
-	let mut _targets_pending = BTreeMap::new ();
+	let mut _targets_unlink = TargetDescriptorMap::new ();
+	let mut _targets_pending = TargetDescriptorMap::new ();
 	
 	{
 		log_debug! (0x79b6c322, "checking conflicts...");
@@ -414,7 +311,7 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 	// ----
 	
 	
-	let mut _targets_skipped = Vec::new ();
+	let mut _targets_skipped = TargetDescriptorVec::new ();
 	
 	{
 		log_debug! (0x067597d6, "reconciling unlink...");
@@ -488,8 +385,8 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 	// ----
 	
 	
-	let mut _targets_protected = BTreeMap::new ();
-	let mut _targets_copy = BTreeMap::new ();
+	let mut _targets_protected = TargetDescriptorMap::new ();
+	let mut _targets_copy = TargetDescriptorMap::new ();
 	
 	{
 		log_debug! (0x067597d6, "reconciling existing...");
@@ -615,13 +512,18 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 		if true {
 			log_cut! ();
 			log_debug! (0xc1da0330, "sources unhandled:");
-			for _entry in _sources_unhandled.values () {
+			let mut _handled_all = true;
+			for _entry in _sources_existing.values () {
 				if _entry.depth == 0 {
 					continue;
 				}
+				if _sources_handled.contains (&_entry.path) {
+					continue;
+				}
+				_handled_all = false;
 				log_debug! (0xef09d9c0, "* `{}`", _entry.path_display ());
 			}
-			if _sources_unhandled.is_empty () {
+			if _handled_all {
 				log_debug! (0xbc33de37, "* none");
 			}
 			log_cut! ();
@@ -630,13 +532,18 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 		if true {
 			log_cut! ();
 			log_debug! (0xb9728c78, "targets unhandled:");
+			let mut _handled_all = true;
 			for _entry in _targets_unhandled.values () {
 				if _entry.depth == 0 {
 					continue;
 				}
+				if _targets_handled.contains (&_entry.path) {
+					continue;
+				}
+				_handled_all = false;
 				log_debug! (0xfbb6fba3, "* `{}`", _entry.path_display ());
 			}
-			if _targets_unhandled.is_empty () {
+			if _handled_all {
 				log_debug! (0x4b943c3b, "* none");
 			}
 			log_cut! ();
@@ -648,5 +555,127 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 	
 	
 	fail! (0x1d81ea47, "not implemented");
+}
+
+
+
+
+type EntryVec = Vec<Entry>;
+type EntryMap = BTreeMap<OsString, Entry>;
+
+type PathVec = Vec<OsString>;
+type PathSet = BTreeSet<OsString>;
+
+type TargetDescriptorVec = Vec<TargetDescriptor>;
+type TargetDescriptorMap = BTreeMap<OsString, TargetDescriptor>;
+
+
+
+
+fn sift_sources (_rules : &TargetRules, _sources_existing : &EntryMap, _targets_existing : &EntryMap, _sources_handled : &mut PathSet) -> Outcome<TargetDescriptorVec> {
+		
+		
+		let mut _targets_planned = TargetDescriptorVec::new ();
+		
+		
+		log_debug! (0x9f16c940, "sifting sources...");
+		
+		for _source in _sources_existing.values () {
+			
+			let mut _handled = false;
+			
+			for _rule in _rules.rules.iter () {
+				match _rule {
+					
+					
+					// NOTE:
+					//
+					//   If the source is a folder, then recursion happens at a later stage.
+					//   Also, if the source is a folder, it will later be transformed into a `MakeDir`.
+					//
+					//   In case of `CopyFlatten` or `CopyRename` if one selects a folder,
+					//   it won't be recursively "flattened", but instead recursively "coppied" as above.
+					
+					TargetRule::Copy { source : _selector, target : _target } =>
+						if _selector.matches (&_source) ? {
+							let _descriptor = TargetDescriptor {
+									path : _target.clone (),
+									existing : _targets_existing.get (_target) .cloned (),
+									operation : TargetOperation::Copy {
+											source : _source.clone (),
+										},
+								};
+							_targets_planned.push (_descriptor);
+							_handled = true;
+						}
+					
+					TargetRule::CopyFlatten { source : _selector, target : _target } =>
+						if _selector.matches (&_source) ? {
+							let _target = Path::new (_target) .join (&_source.name) .into ();
+							let _descriptor = TargetDescriptor {
+									existing : _targets_existing.get (&_target) .cloned (),
+									path : _target,
+									operation : TargetOperation::Copy {
+											source : _source.clone (),
+										},
+								};
+							_targets_planned.push (_descriptor);
+							_handled = true;
+						}
+					
+					TargetRule::CopyRename { .. } =>
+						fail! (0xb2bb5d6d, "not implemented!"),
+					
+					
+					// NOTE:  If  the source is a folder, it won't be recursed, but instead a symlink created to it.
+					
+					TargetRule::Symlink { source : _selector, target : _target } =>
+						if _selector.matches (&_source) ? {
+							let _descriptor = TargetDescriptor {
+									path : _target.clone (),
+									existing : _targets_existing.get (_target) .cloned (),
+									operation : TargetOperation::Symlink {
+											source : _source.clone (),
+										},
+								};
+							_targets_planned.push (_descriptor);
+							_handled = true;
+						}
+					
+					TargetRule::SymlinkFlatten { source : _selector, target : _target } =>
+						if _selector.matches (&_source) ? {
+							let _target = Path::new (_target) .join (&_source.name) .into ();
+							let _descriptor = TargetDescriptor {
+									existing : _targets_existing.get (&_target) .cloned (),
+									path : _target,
+									operation : TargetOperation::Symlink {
+											source : _source.clone (),
+										},
+								};
+							_targets_planned.push (_descriptor);
+							_handled = true;
+						}
+					
+					TargetRule::SymlinkRename { .. } =>
+						fail! (0x3d416349, "not implemented!"),
+					
+					
+					TargetRule::Protect { .. } |
+					TargetRule::Unlink { .. } =>
+						(),
+					
+					TargetRule::MakeDir { .. } |
+					TargetRule::MakeSymlink { .. } =>
+						(),
+				}
+			}
+			
+			if _handled {
+				_sources_handled.insert (_source.path.clone ());
+			}
+		}
+		
+		
+		return Ok (_targets_planned);
 }
 
