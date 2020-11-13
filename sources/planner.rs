@@ -49,9 +49,9 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 						if _selector.matches (&_source) ? {
 							let _descriptor = TargetDescriptor {
 									path : _target.clone (),
+									existing : _targets_existing.get (_target) .cloned (),
 									operation : TargetOperation::Copy {
 											source : _source.clone (),
-											existing : _targets_existing.get (_target) .cloned (),
 										},
 								};
 							_targets_planned.push (_descriptor);
@@ -62,11 +62,11 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 						if _selector.matches (&_source) ? {
 							let _target = Path::new (_target) .join (&_source.name) .into ();
 							let _descriptor = TargetDescriptor {
+									existing : _targets_existing.get (&_target) .cloned (),
+									path : _target,
 									operation : TargetOperation::Copy {
 											source : _source.clone (),
-											existing : _targets_existing.get (&_target) .cloned (),
 										},
-									path : _target,
 								};
 							_targets_planned.push (_descriptor);
 							_handled = true;
@@ -82,9 +82,9 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 						if _selector.matches (&_source) ? {
 							let _descriptor = TargetDescriptor {
 									path : _target.clone (),
+									existing : _targets_existing.get (_target) .cloned (),
 									operation : TargetOperation::Symlink {
 											source : _source.clone (),
-											existing : _targets_existing.get (_target) .cloned (),
 										},
 								};
 							_targets_planned.push (_descriptor);
@@ -95,11 +95,11 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 						if _selector.matches (&_source) ? {
 							let _target = Path::new (_target) .join (&_source.name) .into ();
 							let _descriptor = TargetDescriptor {
+									existing : _targets_existing.get (&_target) .cloned (),
+									path : _target,
 									operation : TargetOperation::Symlink {
 											source : _source.clone (),
-											existing : _targets_existing.get (&_target) .cloned (),
 										},
-									path : _target,
 								};
 							_targets_planned.push (_descriptor);
 							_handled = true;
@@ -146,9 +146,8 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 						if _selector.matches (&_target) ? {
 							let _descriptor = TargetDescriptor {
 									path : _target.path.clone (),
-									operation : TargetOperation::Protect {
-											existing : _target.clone (),
-										},
+									existing : Some (_target.clone ()),
+									operation : TargetOperation::Protect,
 								};
 							_targets_planned.push (_descriptor);
 							_handled = true;
@@ -159,9 +158,8 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 						if _selector.matches (&_target) ? {
 							let _descriptor = TargetDescriptor {
 									path : _target.path.clone (),
-									operation : TargetOperation::Unlink {
-											existing : _target.clone (),
-										},
+									existing : Some (_target.clone ()),
+									operation : TargetOperation::Unlink,
 								};
 							_targets_planned.push (_descriptor);
 							_handled = true;
@@ -207,9 +205,8 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 				TargetRule::MakeDir { target : _target } => {
 					let _descriptor = TargetDescriptor {
 							path : _target.clone (),
-							operation : TargetOperation::MakeDir {
-									existing : _targets_existing.get (_target) .cloned (),
-								},
+							existing : _targets_existing.get (_target) .cloned (),
+							operation : TargetOperation::MakeDir,
 						};
 					_targets_planned.push (_descriptor);
 				}
@@ -217,9 +214,9 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 				TargetRule::MakeSymlink { target : _target, link : _link } => {
 					let _descriptor = TargetDescriptor {
 							path : _target.clone (),
+							existing : _targets_existing.get (_target) .cloned (),
 							operation : TargetOperation::MakeSymlink {
 									link : _link.clone (),
-									existing : _targets_existing.get (_target) .cloned (),
 								},
 						};
 					_targets_planned.push (_descriptor);
@@ -256,7 +253,7 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 			
 			let _source_1 = match &_target_1.operation {
 				
-				TargetOperation::Copy { source : _source_1, .. } =>
+				TargetOperation::Copy { source : _source_1 } =>
 					if _source_1.is_dir {
 						_source_1
 					} else {
@@ -277,11 +274,11 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 				
 				let _target_2_path = Path::new (&_target_1.path) .join (Path::new (&_source_2.path) .strip_prefix (&_source_1.path) .unwrap ()) .into ();
 				let _target_2 = TargetDescriptor {
+						existing : _targets_existing.get (&_target_2_path) .cloned (),
+						path : _target_2_path,
 						operation : TargetOperation::Copy {
 								source : _source_2.clone (),
-								existing : _targets_existing.get (&_target_2_path) .cloned (),
 							},
-						path : _target_2_path,
 					};
 				_targets_planned_extended.push (_target_2);
 			}
@@ -305,12 +302,12 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 		for _descriptor in _targets_planned.drain (..) {
 			
 			match _descriptor.operation {
-				TargetOperation::Protect { existing : _target } => {
-					_targets_protect.insert (_descriptor.path, _target);
+				TargetOperation::Protect => {
+					_targets_protect.insert (_descriptor.path.clone (), _descriptor);
 					continue;
 				}
-				TargetOperation::Unlink { existing : _target } => {
-					_targets_unlink.insert (_descriptor.path, _target);
+				TargetOperation::Unlink => {
+					_targets_unlink.insert (_descriptor.path.clone (), _descriptor);
 					continue;
 				}
 				_ =>
@@ -331,11 +328,11 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 			}
 			
 			match _descriptor.operation {
-				TargetOperation::MakeDir { .. } => {
+				TargetOperation::MakeDir => {
 					_targets_mkdir.insert (_descriptor.path);
 					continue;
 				}
-				TargetOperation::Copy { source : _source, .. } if _source.is_dir => {
+				TargetOperation::Copy { source : _source } if _source.is_dir => {
 					_targets_mkdir.insert (_descriptor.path);
 					continue;
 				}
@@ -356,35 +353,24 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 			}
 		}
 		
-		for (_, _target) in _targets_protect.into_iter () {
-			if _target.is_dir && ! _target.is_symlink {
-				_targets_mkdir.remove (&_target.path);
+		for (_, _descriptor) in _targets_protect.into_iter () {
+			if let Some (_target) = &_descriptor.existing {
+				if _target.is_dir && ! _target.is_symlink {
+					_targets_mkdir.remove (&_target.path);
+				}
 			}
-			let _descriptor = TargetDescriptor {
-					path : _target.path.clone (),
-					operation : TargetOperation::Protect {
-							existing : _target,
-						},
-				};
 			_targets_planned.push (_descriptor);
 		}
 		
-		for (_, _target) in _targets_unlink.into_iter () {
-			let _descriptor = TargetDescriptor {
-					path : _target.path.clone (),
-					operation : TargetOperation::Unlink {
-							existing : _target,
-						},
-				};
+		for (_, _descriptor) in _targets_unlink.into_iter () {
 			_targets_planned.push (_descriptor);
 		}
 		
 		for _target in _targets_mkdir.into_iter () {
 			let _descriptor = TargetDescriptor {
-					operation : TargetOperation::MakeDir {
-							existing : _targets_existing.get (&_target) .cloned (),
-						},
-					path : _target,
+					path : _target.clone (),
+					existing : _targets_existing.get (&_target) .cloned (),
+					operation : TargetOperation::MakeDir,
 				};
 			_targets_planned.push (_descriptor);
 		}
@@ -405,7 +391,7 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 		for _descriptor in _targets_planned.drain (..) {
 			
 			match _descriptor.operation {
-				TargetOperation::Unlink { .. } => {
+				TargetOperation::Unlink => {
 					_targets_unlink.insert (_descriptor.path.clone (), _descriptor);
 				}
 				_ =>
@@ -434,45 +420,53 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 		log_debug! (0x067597d6, "reconciling unlink...");
 		
 		for (_, _descriptor_unlink) in _targets_unlink.into_iter () .rev () {
-			if let TargetOperation::Unlink { existing : _target } = &_descriptor_unlink.operation {
+			if let TargetOperation::Unlink = _descriptor_unlink.operation {
 				
 				let mut _keep = true;
 				
 				if let Some (_descriptor_pending) = _targets_pending.get (&_descriptor_unlink.path) {
 					match &_descriptor_pending.operation {
 						
-						TargetOperation::Protect { .. } => {
-							log_error! (0x908583c1, "conflicting operations for path `{}`:  unlinked and protected;", _target.path_display ());
-							fail! (0x7c1c742f, "conflicting operations for path `{}`", _target.path_display ());
+						TargetOperation::Protect => {
+							log_error! (0x908583c1, "conflicting operations for path `{}`:  unlinked and protected;", _descriptor_unlink.path_display ());
+							fail! (0x7c1c742f, "conflicting operations for path `{}`", _descriptor_unlink.path_display ());
 						}
-						TargetOperation::Unlink { .. } => {
+						TargetOperation::Unlink => {
 							unreachable! ();
 						}
 						
-						TargetOperation::Copy { source : _source, .. } => {
+						TargetOperation::Copy { source : _source } => {
 							if _source.is_dir {
 								unreachable! ();
 							}
-							if _target.is_dir && ! _target.is_symlink && _source.is_dir {
-								_keep = false;
+							if let Some (_target) = &_descriptor_unlink.existing {
+								if _target.is_dir && ! _target.is_symlink && _source.is_dir {
+									_keep = false;
+								}
 							}
 						}
 						
-						TargetOperation::Symlink { source : _source, .. } => {
-							if _target.is_symlink {
-								_keep = false;
+						TargetOperation::Symlink { .. } => {
+							if let Some (_target) = &_descriptor_unlink.existing {
+								if _target.is_symlink {
+									_keep = false;
+								}
 							}
 						}
 						
-						TargetOperation::MakeDir { .. } => {
-							if _target.is_dir && ! _target.is_symlink {
-								_keep = false;
+						TargetOperation::MakeDir => {
+							if let Some (_target) = &_descriptor_unlink.existing {
+								if _target.is_dir && ! _target.is_symlink {
+									_keep = false;
+								}
 							}
 						}
 						
 						TargetOperation::MakeSymlink { .. } => {
-							if _target.is_symlink {
-								_keep = false;
+							if let Some (_target) = &_descriptor_unlink.existing {
+								if _target.is_symlink {
+									_keep = false;
+								}
 							}
 						}
 					}
@@ -503,18 +497,18 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 		for (_, _descriptor) in _targets_pending.into_iter () {
 			match &_descriptor.operation {
 				
-				TargetOperation::Protect { .. } => {
+				TargetOperation::Protect => {
 					_targets_protected.insert (_descriptor.path.clone (), _descriptor);
 				}
-				TargetOperation::Unlink { .. } => {
+				TargetOperation::Unlink => {
 					unreachable! ();
 				}
 				
-				TargetOperation::Copy { source : _source, .. } => {
+				TargetOperation::Copy { source : _source } => {
 					_targets_copy.insert (_descriptor.path.clone (), _descriptor);
 				}
 				
-				TargetOperation::Symlink { source : _source, existing : _existing } => {
+				TargetOperation::Symlink { source : _source } => {
 					
 					let _source_path_0 = _sources_root.join (Path::new (&_source.path) .strip_prefix ("/") .unwrap ());
 					let _target_path_0 = _targets_root.join (Path::new (&_descriptor.path) .strip_prefix ("/") .unwrap ());
@@ -538,12 +532,8 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 						}
 					};
 					
-					let _skip = if let Some (_existing) = _existing {
-						if _existing.is_symlink && OsString::eq (_existing.link.as_ref () .unwrap (), &_link) {
-							true
-						} else {
-							false
-						}
+					let _skip = if let Some (_existing) = &_descriptor.existing {
+						_existing.is_symlink && OsString::eq (_existing.link.as_ref () .unwrap (), &_link)
 					} else {
 						false
 					};
@@ -553,17 +543,17 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 					} else {
 						let _descriptor = TargetDescriptor {
 								path : _descriptor.path.clone (),
+								existing : _descriptor.existing.clone (),
 								operation : TargetOperation::MakeSymlink {
 										link : _link,
-										existing : _existing.clone (),
 									},
 							};
 						_targets_planned.push (_descriptor);
 					}
 				}
 				
-				TargetOperation::MakeDir { existing : _existing, .. } => {
-					if let Some (_existing) = _existing {
+				TargetOperation::MakeDir => {
+					if let Some (_existing) = &_descriptor.existing {
 						if _existing.is_dir && ! _existing.is_symlink {
 							_targets_skipped.push (_descriptor);
 						} else {
@@ -574,8 +564,8 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 					}
 				}
 				
-				TargetOperation::MakeSymlink { link : _link, existing : _existing } => {
-					if let Some (_existing) = _existing {
+				TargetOperation::MakeSymlink { link : _link } => {
+					if let Some (_existing) = &_descriptor.existing {
 						if _existing.is_symlink && OsString::eq (_existing.link.as_ref () .unwrap (), _link) {
 							_targets_skipped.push (_descriptor);
 						} else {
@@ -605,17 +595,17 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : Vec<Entry>
 			log_debug! (0x975bea76, "targets descriptors:");
 			for _descriptor in _targets_planned.iter () {
 				match &_descriptor.operation {
-					TargetOperation::Protect { .. } =>
+					TargetOperation::Protect =>
 						log_debug! (0xf0141374, "* protect `{}`", _descriptor.path_display ()),
-					TargetOperation::Unlink { .. } =>
+					TargetOperation::Unlink =>
 						log_debug! (0x096428c7, "* unlink `{}`", _descriptor.path_display ()),
-					TargetOperation::Copy { source : _source, .. } =>
+					TargetOperation::Copy { source : _source } =>
 						log_debug! (0xbd64ca66, "* copy `{}` from `{}`", _descriptor.path_display (), _source.path_display ()),
-					TargetOperation::Symlink { source : _source, .. } =>
+					TargetOperation::Symlink { source : _source } =>
 						log_debug! (0x6aa9b259, "* symlink `{}` from `{}`", _descriptor.path_display (), _source.path_display ()),
-					TargetOperation::MakeDir { .. } =>
+					TargetOperation::MakeDir =>
 						log_debug! (0xa5485064, "* mkdir `{}`", _descriptor.path_display ()),
-					TargetOperation::MakeSymlink { link : _link, .. } =>
+					TargetOperation::MakeSymlink { link : _link } =>
 						log_debug! (0x27c9eb12, "* symlink `{}` to `{}`", _descriptor.path_display (), Path::new (_link) .display ()),
 				}
 			}

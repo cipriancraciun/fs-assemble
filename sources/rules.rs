@@ -187,6 +187,7 @@ pub enum Renaming {
 #[ derive (Debug) ]
 pub struct TargetDescriptor {
 	pub path : OsString,
+	pub existing : Option<Entry>,
 	pub operation : TargetOperation,
 }
 
@@ -195,31 +196,21 @@ pub struct TargetDescriptor {
 #[ derive (Debug) ]
 pub enum TargetOperation {
 	
-	Protect {
-		existing : Entry,
-	},
-	
-	Unlink {
-		existing : Entry,
-	},
+	Protect,
+	Unlink,
 	
 	Copy {
 		source : Entry,
-		existing : Option<Entry>,
 	},
 	
 	Symlink {
 		source : Entry,
-		existing : Option<Entry>,
 	},
 	
-	MakeDir {
-		existing : Option<Entry>,
-	},
+	MakeDir,
 	
 	MakeSymlink {
 		link : OsString,
-		existing : Option<Entry>,
 	},
 }
 
