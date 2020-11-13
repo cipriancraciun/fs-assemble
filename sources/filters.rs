@@ -9,12 +9,12 @@ impl fsas::IndexFilter for fsas::IndexRules {
 	
 	fn filter (&self, _entry : &fsas::Entry) -> Outcome<fsas::IndexDecision> {
 		
-		let mut _collect = true;
-		let mut _recurse = true;
+		let mut _collect = self.fallback_collect;
+		let mut _recurse = self.fallback_recurse;
 		
 		if _entry.is_symlink {
 			_collect &= self.symlinks_collect;
-			_collect &= self.symlinks_recurse;
+			_recurse &= self.symlinks_recurse;
 		}
 		
 		if _entry.is_hidden {

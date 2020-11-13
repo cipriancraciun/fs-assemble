@@ -5,6 +5,8 @@ use crate::prelude::*;
 
 
 
+#[ derive (Clone) ]
+#[ derive (Debug) ]
 pub struct Entry {
 	pub path_0 : PathBuf,
 	pub path : OsString,
@@ -28,6 +30,9 @@ pub trait IndexFilter {
 	fn filter (&self, _entry : &Entry) -> Outcome<IndexDecision>;
 }
 
+
+#[ derive (Clone) ]
+#[ derive (Debug) ]
 pub struct IndexDecision {
 	pub collect : bool,
 	pub recurse : bool,
@@ -36,14 +41,21 @@ pub struct IndexDecision {
 
 
 
+#[ derive (Clone) ]
+#[ derive (Debug) ]
 pub struct IndexRules {
 	pub rules : Vec<IndexRule>,
 	pub symlinks_collect : bool,
 	pub symlinks_recurse : bool,
 	pub hidden_collect : bool,
 	pub hidden_recurse : bool,
+	pub fallback_collect : bool,
+	pub fallback_recurse : bool,
 }
 
+
+#[ derive (Clone) ]
+#[ derive (Debug) ]
 pub enum IndexRule {
 	
 	Include {
@@ -57,6 +69,8 @@ pub enum IndexRule {
 
 
 
+#[ derive (Clone) ]
+#[ derive (Debug) ]
 pub enum EntrySelector {
 	Always,
 	Never,
@@ -68,6 +82,8 @@ pub enum EntrySelector {
 }
 
 
+#[ derive (Clone) ]
+#[ derive (Debug) ]
 pub enum EntryMatcher {
 	
 	Path (Pattern),
@@ -81,6 +97,8 @@ pub enum EntryMatcher {
 }
 
 
+#[ derive (Clone) ]
+#[ derive (Debug) ]
 pub enum Pattern {
 	Exact (OsString),
 	Prefix (OsString),
@@ -92,22 +110,27 @@ pub enum Pattern {
 
 
 
+#[ derive (Clone) ]
+#[ derive (Debug) ]
+pub struct TargetRules {
+	pub rules : Vec<TargetRule>,
+}
+
+
+#[ derive (Clone) ]
+#[ derive (Debug) ]
 pub enum TargetRule {
 	
 	Protect {
-		selector : EntrySelector,
+		target : EntrySelector,
 	},
 	
-	Delete {
-		selector : EntrySelector,
-	},
-	
-	MkDir {
-		path : OsString,
+	Clean {
+		target : EntrySelector,
 	},
 	
 	Copy {
-		source : OsString,
+		source : EntrySelector,
 		target : OsString,
 	},
 	
@@ -120,14 +143,76 @@ pub enum TargetRule {
 		source : EntrySelector,
 		renaming : Renaming,
 	},
+	
+	Symlink {
+		source : EntrySelector,
+		target : OsString,
+	},
+	
+	SymlinkFlatten {
+		source : EntrySelector,
+		target : OsString,
+	},
+	
+	SymlinkRename {
+		source : EntrySelector,
+		renaming : Renaming,
+	},
+	
+	MakeDir {
+		target : OsString,
+	},
+	
+	MakeSymlink {
+		target : OsString,
+		link : OsString,
+	},
 }
 
 
+#[ derive (Clone) ]
+#[ derive (Debug) ]
 pub enum Renaming {
 	
 	Regex {
 		pattern : regexb::Regex,
 		replacement : OsString,
 	},
+}
+
+
+
+
+#[ derive (Clone) ]
+#[ derive (Debug) ]
+pub struct TargetEntry {
+	pub path : OsString,
+	pub operation : TargetOperation,
+}
+
+
+#[ derive (Clone) ]
+#[ derive (Debug) ]
+pub enum TargetOperation {
+	
+	Protect {
+		existing : Entry,
+	},
+	
+	Copy {
+		existing : Entry,
+	},
+	
+	Symlink {
+		existing : Entry,
+	},
+	
+	MakeDir,
+	
+	MakeSymlink {
+		link : OsString,
+	},
+	
+	Unlink,
 }
 

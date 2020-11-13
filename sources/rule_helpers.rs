@@ -9,7 +9,7 @@ use crate::rules::*;
 impl IndexRules {
 	
 	
-	pub fn new () -> Self {
+	pub fn new_for_source () -> Self {
 		
 		return Self {
 				rules : Vec::new (),
@@ -17,6 +17,21 @@ impl IndexRules {
 				symlinks_recurse : true,
 				hidden_collect : false,
 				hidden_recurse : false,
+				fallback_collect : false,
+				fallback_recurse : true,
+			};
+	}
+	
+	pub fn new_for_target () -> Self {
+		
+		return Self {
+				rules : Vec::new (),
+				symlinks_collect : true,
+				symlinks_recurse : false,
+				hidden_collect : true,
+				hidden_recurse : true,
+				fallback_collect : true,
+				fallback_recurse : true,
 			};
 	}
 	
@@ -85,19 +100,19 @@ impl EntrySelector {
 		EntrySelector::Matches (EntryMatcher::Name (_pattern))
 	}
 	
-	pub fn if_symlink () -> EntrySelector {
+	pub fn if_is_symlink () -> EntrySelector {
 		EntrySelector::Matches (EntryMatcher::IsSymlink)
 	}
 	
-	pub fn if_dir () -> EntrySelector {
+	pub fn if_is_dir () -> EntrySelector {
 		EntrySelector::Matches (EntryMatcher::IsDir)
 	}
 	
-	pub fn if_file () -> EntrySelector {
+	pub fn if_is_file () -> EntrySelector {
 		EntrySelector::Matches (EntryMatcher::IsFile)
 	}
 	
-	pub fn if_hidden () -> EntrySelector {
+	pub fn if_is_hidden () -> EntrySelector {
 		EntrySelector::Matches (EntryMatcher::IsHidden)
 	}
 	
@@ -156,7 +171,7 @@ impl Pattern {
 	}
 	
 	
-	pub fn new_glob (_pattern : &str) -> Outcome<Self> {
+	pub fn glob (_pattern : &str) -> Outcome<Self> {
 		
 		let mut _builder = globset::GlobSetBuilder::new ();
 		
@@ -177,7 +192,7 @@ impl Pattern {
 	}
 	
 	
-	pub fn new_regex (_pattern : &str) -> Outcome<Self> {
+	pub fn regex (_pattern : &str) -> Outcome<Self> {
 		
 		let mut _builder = regexb::RegexSetBuilder::new (&[_pattern]);
 		
@@ -192,6 +207,65 @@ impl Pattern {
 			Err (_error) =>
 				fail! (0x6f0bb71e, "invalid regex pattern `{}`:  {}", _pattern, _error),
 		}
+	}
+}
+
+
+
+
+impl TargetRules {
+	
+	
+	pub fn new () -> Self {
+		return Self {
+				rules : Vec::new (),
+			};
+	}
+	
+	
+	pub fn push_protect (&mut self, _target : EntrySelector) -> &mut Self {
+		self.rules.push (TargetRule::Protect { target : _target });
+		self
+	}
+	
+	pub fn push_clean (&mut self, _target : EntrySelector) -> &mut Self {
+		self.rules.push (TargetRule::Clean { target : _target });
+		self
+	}
+	
+	
+	pub fn push_copy (&mut self, _source : &str, _target : &str) -> &mut Self {
+		let _source = EntrySelector::if_matches_path (Pattern::exact (_source));
+		self.rules.push (TargetRule::Copy { source : _source.into (), target : _target.into () });
+		self
+	}
+	
+	pub fn push_copy_flatten (&mut self, _source : EntrySelector, _target : &str) -> &mut Self {
+		self.rules.push (TargetRule::CopyFlatten { source : _source, target : _target.into () });
+		self
+	}
+	
+	
+	pub fn push_symlink (&mut self, _source : &str, _target : &str) -> &mut Self {
+		let _source = EntrySelector::if_matches_path (Pattern::exact (_source));
+		self.rules.push (TargetRule::Symlink { source : _source.into (), target : _target.into () });
+		self
+	}
+	
+	pub fn push_symlink_flatten (&mut self, _source : EntrySelector, _target : &str) -> &mut Self {
+		self.rules.push (TargetRule::SymlinkFlatten { source : _source, target : _target.into () });
+		self
+	}
+	
+	
+	pub fn push_make_dir (&mut self, _target : &str) -> &mut Self {
+		self.rules.push (TargetRule::MakeDir { target : _target.into () });
+		self
+	}
+	
+	pub fn push_make_symlink (&mut self, _target : &str, _link : &str) -> &mut Self {
+		self.rules.push (TargetRule::MakeSymlink { target : _target.into (), link : _link.into () });
+		self
 	}
 }
 
