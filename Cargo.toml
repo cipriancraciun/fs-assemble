@@ -9,11 +9,12 @@ edition = "2018"
 default = []
 
 [dependencies]
-regex = "*"
 globset = "*"
-walkdir = "*"
-pathdiff = "*"
 path-clean = "*"
+pathdiff = "*"
+regex = "*"
+tempfile = "*"
+walkdir = "*"
 
 [[bin]]
 name = "fs-assemble"
