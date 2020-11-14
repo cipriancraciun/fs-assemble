@@ -73,6 +73,12 @@ pub fn execute (
 						log_error! (0x95cab520, "failed executing copy for `{}` from `{}`:  {}", _target_path_0_display, _source_path_0_display, _error);
 						_failed = true;
 					}
+					let _target_atime = nix::TimeValLike::nanoseconds ((_source.metadata_follow.atime () * 1_000_000_000) + _source.metadata_follow.atime_nsec ());
+					let _target_mtime = nix::TimeValLike::nanoseconds ((_source.metadata_follow.mtime () * 1_000_000_000) + _source.metadata_follow.mtime_nsec ());
+					if let Err (_error) = nix::lutimes (_target_path_0, &_target_atime, &_target_mtime) {
+						log_error! (0x6e0b1ee3, "failed executing utimes for `{}`:  {}", _target_path_0_display, _error);
+						_failed = true;
+					}
 				} else {
 					log_error! (0x21a927bf, "failed executing copy for `{}` from `{}`:  unsupported source", _target_path_0_display, _source_path_0_display);
 					_failed = true;
