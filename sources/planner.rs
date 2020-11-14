@@ -31,27 +31,29 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : EntryVec, 
 	_targets_planned.extend (_targets_extended.into_iter ());
 	
 	let mut _targets_protect = TargetDescriptorMap::new ();
-	let mut _targets_unlink = TargetDescriptorMap::new ();
+	let mut _targets_unlink_0 = TargetDescriptorMap::new ();
 	let mut _targets_pending = TargetDescriptorMap::new ();
 	
-	sort_targets (_targets_planned, &mut _targets_protect, &mut _targets_unlink, &mut _targets_pending) ?;
+	sort_targets (_targets_planned, &mut _targets_protect, &mut _targets_unlink_0, &mut _targets_pending) ?;
 	
-	let mut _targets_planned = TargetDescriptorVec::new ();
 	let mut _targets_skipped = TargetDescriptorVec::new ();
+	let mut _targets_unlink = TargetDescriptorMap::new ();
+	let mut _targets_create = TargetDescriptorMap::new ();
 	
-	prune_unlink (_targets_unlink, &_targets_protect, &_targets_pending, &mut _targets_planned, &mut _targets_skipped) ?;
-	prune_pending (_sources_root, _targets_root, _targets_pending, &_targets_protect, &mut _targets_planned, &mut _targets_skipped) ?;
+	prune_unlink (_targets_unlink_0, &_targets_protect, &_targets_pending, &mut _targets_unlink, &mut _targets_skipped) ?;
+	prune_create (_sources_root, _targets_root, _targets_pending, &_targets_protect, &mut _targets_create, &mut _targets_skipped) ?;
 	
-	
-	trace_planned (&_targets_planned);
-	trace_protected (&_targets_protect);
-	trace_skipped (&_targets_skipped);
+	trace_plan_create (&_targets_create);
+	trace_plan_protect (&_targets_protect);
+	trace_plan_unlink (&_targets_unlink);
+	trace_plan_skipped (&_targets_skipped);
 	trace_sources_unhandled (&_sources_existing, &_sources_handled);
 	trace_targets_unhandled (&_targets_existing, &_targets_handled);
 	
-	
+	let mut _targets_planned = TargetDescriptorVec::new ();
+	_targets_planned.extend (_targets_unlink.into_iter () .rev () .map (|(_, _descriptor)| _descriptor));
+	_targets_planned.extend (_targets_create.into_iter () .map (|(_, _descriptor)| _descriptor));
 	_targets_planned.extend (_targets_protect.into_iter () .map (|(_, _descriptor)| _descriptor));
-	
 	
 	return Ok (_targets_planned);
 }
@@ -455,7 +457,7 @@ fn sort_targets (_targets_planned : TargetDescriptorVec, _targets_protect : &mut
 
 
 
-fn prune_unlink (_targets_unlink : TargetDescriptorMap, _targets_protect : &TargetDescriptorMap, _targets_pending : &TargetDescriptorMap, _targets_planned : &mut TargetDescriptorVec, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
+fn prune_unlink (_targets_unlink : TargetDescriptorMap, _targets_protect : &TargetDescriptorMap, _targets_pending : &TargetDescriptorMap, _targets_planned : &mut TargetDescriptorMap, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
 	
 	log_debug! (0x067597d6, "pruning unlink...");
 	
@@ -513,7 +515,9 @@ fn prune_unlink (_targets_unlink : TargetDescriptorMap, _targets_protect : &Targ
 		}
 		
 		if _keep {
-			_targets_planned.push (_descriptor_unlink);
+			if let Some (_descriptor) = _targets_planned.insert (_descriptor_unlink.path.clone (), _descriptor_unlink) {
+				unreachable! ();
+			}
 		} else {
 			_targets_skipped.push (_descriptor_unlink);
 		}
@@ -525,9 +529,11 @@ fn prune_unlink (_targets_unlink : TargetDescriptorMap, _targets_protect : &Targ
 
 
 
-fn prune_pending (_sources_root : &Path, _targets_root : &Path, _targets_pending : TargetDescriptorMap, _targets_protect : &TargetDescriptorMap, _targets_planned : &mut TargetDescriptorVec, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
+fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_pending : TargetDescriptorMap, _targets_protect : &TargetDescriptorMap, _targets_planned_0 : &mut TargetDescriptorMap, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
 	
-	log_debug! (0x067597d6, "pruning pending...");
+	log_debug! (0x067597d6, "pruning create...");
+	
+	let mut _targets_planned = TargetDescriptorVec::new ();
 	
 	for (_, _descriptor) in _targets_pending.into_iter () {
 		match &_descriptor.operation {
@@ -611,31 +617,43 @@ fn prune_pending (_sources_root : &Path, _targets_root : &Path, _targets_pending
 		}
 	}
 	
+	for _descriptor in _targets_planned.into_iter () {
+		if let Some (_descriptor) = _targets_planned_0.insert (_descriptor.path.clone (), _descriptor) {
+			unreachable! ();
+		}
+	}
+	
 	return Ok (());
 }
 
 
 
 
-fn trace_planned (_targets_planned : &TargetDescriptorVec) -> () {
+fn trace_plan_create (_targets_planned : &TargetDescriptorMap) -> () {
 	
 	log_cut! ();
-	log_debug! (0x975bea76, "targets planned:");
-	trace_descriptors (_targets_planned.iter ());
+	log_debug! (0x975bea76, "targets planned for creation:");
+	trace_descriptors (_targets_planned.values ());
 	log_cut! ();
 }
 
-
-fn trace_protected (_targets_protected : &TargetDescriptorMap) -> () {
+fn trace_plan_protect (_targets_protected : &TargetDescriptorMap) -> () {
 	
 	log_cut! ();
-	log_debug! (0x547cad62, "targets protected:");
+	log_debug! (0x5fb7bc98, "targets planned for protection:");
 	trace_descriptors (_targets_protected.values ());
 	log_cut! ();
 }
 
+fn trace_plan_unlink (_targets_protected : &TargetDescriptorMap) -> () {
+	
+	log_cut! ();
+	log_debug! (0xd71d0ef0, "targets planned for unlinking:");
+	trace_descriptors (_targets_protected.values ());
+	log_cut! ();
+}
 
-fn trace_skipped (_targets_skipped : &TargetDescriptorVec) -> () {
+fn trace_plan_skipped (_targets_skipped : &TargetDescriptorVec) -> () {
 	
 	log_cut! ();
 	log_debug! (0x547cad62, "targets skipped:");
@@ -643,16 +661,16 @@ fn trace_skipped (_targets_skipped : &TargetDescriptorVec) -> () {
 	log_cut! ();
 }
 
-
 fn trace_descriptors <'a> (_descriptors : impl Iterator<Item = &'a TargetDescriptor>) -> () {
 	
-	let mut _handled_all = true;
+	let mut _handled_none = true;
 	
 	for _descriptor in _descriptors {
 		trace_descriptor (&_descriptor);
+		_handled_none = false;
 	}
 	
-	if _handled_all {
+	if _handled_none {
 		log_debug! (0xb6addc1a, "* none");
 	}
 }
@@ -681,7 +699,7 @@ fn trace_sources_unhandled (_sources_existing : &EntryMap, _sources_handled : &P
 	log_cut! ();
 	log_debug! (0xc1da0330, "sources unhandled:");
 	
-	let mut _handled_all = true;
+	let mut _handled_none = true;
 	
 	for _entry in _sources_existing.values () {
 		if _entry.depth == 0 {
@@ -690,11 +708,11 @@ fn trace_sources_unhandled (_sources_existing : &EntryMap, _sources_handled : &P
 		if _sources_handled.contains (&_entry.path) {
 			continue;
 		}
-		_handled_all = false;
+		_handled_none = false;
 		log_debug! (0xef09d9c0, "* `{}`", _entry.path_display ());
 	}
 	
-	if _handled_all {
+	if _handled_none {
 		log_debug! (0xbc33de37, "* none");
 	}
 	
@@ -707,7 +725,7 @@ fn trace_targets_unhandled (_targets_existing : &EntryMap, _targets_handled : &P
 	log_cut! ();
 	log_debug! (0xb9728c78, "targets unhandled:");
 	
-	let mut _handled_all = true;
+	let mut _handled_none = true;
 	
 	for _entry in _targets_existing.values () {
 		if _entry.depth == 0 {
@@ -716,11 +734,11 @@ fn trace_targets_unhandled (_targets_existing : &EntryMap, _targets_handled : &P
 		if _targets_handled.contains (&_entry.path) {
 			continue;
 		}
-		_handled_all = false;
+		_handled_none = false;
 		log_debug! (0xfbb6fba3, "* `{}`", _entry.path_display ());
 	}
 	
-	if _handled_all {
+	if _handled_none {
 		log_debug! (0x4b943c3b, "* none");
 	}
 	
