@@ -14,6 +14,7 @@ pub(crate) use crate::tools::Outcome;
 pub(crate) use ::globset;
 pub(crate) use ::path_clean as path_clean;
 pub(crate) use ::pathdiff as path_diff;
+pub(crate) use ::peg;
 pub(crate) use ::regex::bytes as regexb;
 pub(crate) use ::walkdir;
 
