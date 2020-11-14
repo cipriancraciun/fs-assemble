@@ -214,3 +214,15 @@ pub enum TargetOperation {
 	},
 }
 
+
+
+
+pub type EntryVec = Vec<Entry>;
+pub type EntryMap = BTreeMap<OsString, Entry>;
+
+pub type PathVec = Vec<OsString>;
+pub type PathSet = BTreeSet<OsString>;
+
+pub type TargetDescriptorVec = Vec<TargetDescriptor>;
+pub type TargetDescriptorMap = BTreeMap<OsString, TargetDescriptor>;
+

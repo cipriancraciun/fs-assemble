@@ -3,6 +3,8 @@
 #![ allow (unused_imports) ]
 
 
+
+
 pub(crate) use ::std::cmp;
 pub(crate) use ::std::env;
 pub(crate) use ::std::fmt;
@@ -47,16 +49,6 @@ pub(crate) use ::std::collections::btree_set::BTreeSet;
 
 
 
-pub mod fsas {
-	
-	pub use crate::filters::*;
-	pub use crate::indexer::*;
-	pub use crate::planner::*;
-	pub use crate::main::*;
-	pub use crate::rules::*;
-	pub use crate::tools::*;
-}
-
-
-pub(crate) use self::fsas::Outcome;
+pub(crate) use crate::fsas;
+pub(crate) use crate::tools::Outcome;
 

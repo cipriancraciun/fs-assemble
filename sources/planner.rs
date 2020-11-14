@@ -37,19 +37,17 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : EntryVec, 
 	let mut _targets_create = TargetDescriptorMap::new ();
 	prune_create (_sources_root, _targets_root, _targets_create_0, &mut _targets_protect, &mut _targets_create, &mut _targets_skipped) ?;
 	
-	trace_plan_create (&_targets_create);
-	trace_plan_protect (&_targets_protect);
-	trace_plan_unlink (&_targets_unlink);
-	trace_plan_skipped (&_targets_skipped);
-	trace_sources_unhandled (&_sources_existing, &_sources_handled);
-	trace_targets_unhandled (&_targets_existing, &_targets_handled);
+	fsas::trace_plan_create (&_targets_create);
+	fsas::trace_plan_protect (&_targets_protect);
+	fsas::trace_plan_unlink (&_targets_unlink);
+	fsas::trace_plan_skipped (&_targets_skipped);
+	fsas::trace_sources_unhandled (&_sources_existing, &_sources_handled);
+	fsas::trace_targets_unhandled (&_targets_existing, &_targets_handled);
 	
 	let mut _targets_planned = TargetDescriptorVec::new ();
 	_targets_planned.extend (_targets_protect.into_iter () .map (|(_, _descriptor)| _descriptor));
 	_targets_planned.extend (_targets_unlink.into_iter () .rev () .map (|(_, _descriptor)| _descriptor));
 	_targets_planned.extend (_targets_create.into_iter () .map (|(_, _descriptor)| _descriptor));
-	
-	verify_plan (&_targets_planned) ?;
 	
 	return Ok (_targets_planned);
 }
@@ -57,9 +55,7 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : EntryVec, 
 
 
 
-fn verify_plan (_targets_planned : &TargetDescriptorVec) -> Outcome<()> {
-	
-	log_debug! (0xe1b5ac8e, "verifying plan...");
+pub fn verify (_targets_planned : &TargetDescriptorVec) -> Outcome<()> {
 	
 	let mut _targets_protect = PathSet::new ();
 	let mut _targets_unlink = PathSet::new ();
@@ -169,12 +165,15 @@ fn verify_plan (_targets_planned : &TargetDescriptorVec) -> Outcome<()> {
 						_should_exclude_unlink = true;
 					}
 				} else {
-					unreachable! ();
+					log_error! (0xf2c7f289, "invalid plan for `{}`:  unexpected copy!", _path_display);
+					_valid = false;
 				}
 			}
 			
-			TargetOperation::Symlink { .. } =>
-				unreachable! (),
+			TargetOperation::Symlink { .. } => {
+				log_error! (0x18ab6419, "invalid plan for `{}`:  unexpected symlink!", _path_display);
+				_valid = false;
+			}
 			
 			TargetOperation::MakeDir => {
 				if let Some (_target) = &_descriptor.existing {
@@ -271,18 +270,6 @@ fn verify_plan (_targets_planned : &TargetDescriptorVec) -> Outcome<()> {
 		fail! (0xe246ff0f, "invalid plan");
 	}
 }
-
-
-
-
-type EntryVec = Vec<Entry>;
-type EntryMap = BTreeMap<OsString, Entry>;
-
-// type PathVec = Vec<OsString>;
-type PathSet = BTreeSet<OsString>;
-
-type TargetDescriptorVec = Vec<TargetDescriptor>;
-type TargetDescriptorMap = BTreeMap<OsString, TargetDescriptor>;
 
 
 
@@ -845,124 +832,5 @@ fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_create_0
 	}
 	
 	return Ok (());
-}
-
-
-
-
-fn trace_plan_create (_descriptors : &TargetDescriptorMap) -> () {
-	
-	log_cut! ();
-	log_debug! (0x975bea76, "targets planned for creation:");
-	trace_descriptors (_descriptors.values ());
-	log_cut! ();
-}
-
-fn trace_plan_protect (_descriptors : &TargetDescriptorMap) -> () {
-	
-	log_cut! ();
-	log_debug! (0x5fb7bc98, "targets planned for protection:");
-	trace_descriptors (_descriptors.values ());
-	log_cut! ();
-}
-
-fn trace_plan_unlink (_descriptors : &TargetDescriptorMap) -> () {
-	
-	log_cut! ();
-	log_debug! (0xd71d0ef0, "targets planned for unlinking:");
-	trace_descriptors (_descriptors.values ());
-	log_cut! ();
-}
-
-fn trace_plan_skipped (_descriptors : &TargetDescriptorVec) -> () {
-	
-	log_cut! ();
-	log_debug! (0x547cad62, "targets skipped:");
-	trace_descriptors (_descriptors.iter ());
-	log_cut! ();
-}
-
-fn trace_descriptors <'a> (_descriptors : impl Iterator<Item = &'a TargetDescriptor>) -> () {
-	
-	let mut _handled_none = true;
-	
-	for _descriptor in _descriptors {
-		trace_descriptor (&_descriptor);
-		_handled_none = false;
-	}
-	
-	if _handled_none {
-		log_debug! (0xb6addc1a, "* none");
-	}
-}
-
-
-fn trace_descriptor (_descriptor : &TargetDescriptor) -> () {
-	match &_descriptor.operation {
-		TargetOperation::Protect =>
-			log_debug! (0xf0141374, "* protect `{}`", _descriptor.path_display ()),
-		TargetOperation::Unlink =>
-			log_debug! (0x096428c7, "* unlink `{}`", _descriptor.path_display ()),
-		TargetOperation::Copy { source : _source } =>
-			log_debug! (0xbd64ca66, "* copy `{}` from `{}`", _descriptor.path_display (), _source.path_display ()),
-		TargetOperation::Symlink { source : _source } =>
-			log_debug! (0x6aa9b259, "* symlink `{}` from `{}`", _descriptor.path_display (), _source.path_display ()),
-		TargetOperation::MakeDir =>
-			log_debug! (0xa5485064, "* mkdir `{}`", _descriptor.path_display ()),
-		TargetOperation::MakeSymlink { link : _link } =>
-			log_debug! (0x27c9eb12, "* symlink `{}` to `{}`", _descriptor.path_display (), Path::new (_link) .display ()),
-	}
-}
-
-
-fn trace_sources_unhandled (_sources_existing : &EntryMap, _sources_handled : &PathSet) -> () {
-	
-	log_cut! ();
-	log_debug! (0xc1da0330, "sources unhandled:");
-	
-	let mut _handled_none = true;
-	
-	for _entry in _sources_existing.values () {
-		if _entry.depth == 0 {
-			continue;
-		}
-		if _sources_handled.contains (&_entry.path) {
-			continue;
-		}
-		_handled_none = false;
-		log_debug! (0xef09d9c0, "* `{}`", _entry.path_display ());
-	}
-	
-	if _handled_none {
-		log_debug! (0xbc33de37, "* none");
-	}
-	
-	log_cut! ();
-}
-
-
-fn trace_targets_unhandled (_targets_existing : &EntryMap, _targets_handled : &PathSet) -> () {
-	
-	log_cut! ();
-	log_debug! (0xb9728c78, "targets unhandled:");
-	
-	let mut _handled_none = true;
-	
-	for _entry in _targets_existing.values () {
-		if _entry.depth == 0 {
-			continue;
-		}
-		if _targets_handled.contains (&_entry.path) {
-			continue;
-		}
-		_handled_none = false;
-		log_debug! (0xfbb6fba3, "* `{}`", _entry.path_display ());
-	}
-	
-	if _handled_none {
-		log_debug! (0x4b943c3b, "* none");
-	}
-	
-	log_cut! ();
 }
 

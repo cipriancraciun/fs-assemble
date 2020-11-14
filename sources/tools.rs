@@ -10,7 +10,7 @@ pub type Outcome<Value> = Result<Value, io::Error>;
 
 
 
-pub fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt::Display) -> () {
+pub(crate) fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt::Display) -> () {
 	if _level < 20000 {
 		return;
 	}
@@ -30,7 +30,7 @@ pub fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt::Displa
 	}
 }
 
-pub fn log_cut () -> () {
+pub(crate) fn log_cut () -> () {
 	unsafe {
 		if _log_cut_last {
 			return;
@@ -51,7 +51,7 @@ static mut _log_cut_last : bool = false;
 
 
 
-pub fn error (_code : u32, _message : impl fmt::Display) -> io::Error {
+pub(crate) fn error (_code : u32, _message : impl fmt::Display) -> io::Error {
 	
 	let _message = format! ("[{:08x}]  {}", _code, _message);
 	

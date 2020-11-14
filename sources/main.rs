@@ -7,7 +7,7 @@ use crate::prelude::*;
 
 fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Result<(), io::Error> {
 	
-	use fsas::*;
+	use crate::fsas::*;
 	
 	
 	let mut _source_filter = IndexRules::new_for_source ();
@@ -43,12 +43,17 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 	
 	log_cut! ();
 	log_notice! (0x7827e63b, "planning...");
-	let _target_entries = plan (&_target_rules, _source_root, _source_entries, _target_root, _target_entries) ?;
+	let _plan = plan (&_target_rules, _source_root, _source_entries, _target_root, _target_entries) ?;
 	log_cut! ();
 	
 	log_cut! ();
-	for _target_entry in _target_entries.iter () {
-		log_debug! (0xb7c38713, "{:?}", _target_entry);
+	log_notice! (0x01f9fc36, "verifying...");
+	verify (&_plan) ?;
+	log_cut! ();
+	
+	log_cut! ();
+	for _descriptor in _plan.iter () {
+		log_debug! (0xb7c38713, "{:?}", _descriptor);
 	}
 	log_cut! ();
 	

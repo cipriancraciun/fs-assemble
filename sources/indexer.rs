@@ -68,7 +68,7 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 
 
 
-pub fn build_tree (_entries : Vec<fsas::Entry>) -> Outcome<BTreeMap<OsString, fsas::Entry>> {
+pub(crate) fn build_tree (_entries : Vec<fsas::Entry>) -> Outcome<BTreeMap<OsString, fsas::Entry>> {
 	
 	let mut _tree = BTreeMap::new ();
 	
