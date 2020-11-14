@@ -15,7 +15,82 @@ pub fn execute (
 			_descriptors_skipped : &mut TargetDescriptorVec,
 		) -> Outcome<()> {
 	
-	fsas::trace_descriptors (_descriptors_planned.iter (), Some ("descriptors planned for execution:"));
+	for _descriptor in _descriptors_planned.into_iter () {
+		
+		let _target_path_1 = Path::new (&_descriptor.path);
+		let _target_path_1_parent = _target_path_1.parent ();
+		let _target_path_1_display = _target_path_1.display ();
+		
+		let _target_path_0 = _targets_root.join (_target_path_1.strip_prefix ("/") .unwrap ());
+		let _target_path_0 = &_target_path_0;
+		let _target_path_0_parent = _target_path_0.parent ();
+		let _target_path_0_display = _target_path_0.display ();
+		
+		let mut _failed = false;
+		
+		match &_descriptor.operation {
+			
+			TargetOperation::Protect => {
+				match fs::symlink_metadata (_target_path_0) {
+					Ok (_existing_metadata) =>
+						// FIXME:  Check that the meta-data actually matches what we have indexed!
+						(),
+					Err (_error) => {
+						log_error! (0x43c7a1ff, "failed executing protect for `{}`:  {}", _target_path_0_display, _error);
+						_failed = true;
+					}
+				}
+			},
+			
+			TargetOperation::Unlink => {
+				if let Some (_existing) = &_descriptor.existing {
+					if _existing.is_dir && ! _existing.is_symlink {
+						if let Err (_error) = fs::remove_dir (_target_path_0) {
+							log_error! (0x64768287, "failed executing unlink for `{}`:  {}", _target_path_0_display, _error);
+							_failed = true;
+						}
+					} else {
+						if let Err (_error) = fs::remove_file (_target_path_0) {
+							log_error! (0x32536192, "failed executing unlink for `{}`:  {}", _target_path_0_display, _error);
+							_failed = true;
+						}
+					}
+				} else {
+					log_error! (0xed2dc94b, "failed executing unlink for `{}`:  target does not exist", _target_path_0_display);
+					_failed = true;
+				}
+			},
+			
+			TargetOperation::Copy { .. } => {
+				fail_unimplemented! (0x9d504886);
+			}
+			
+			TargetOperation::Symlink { .. } => {
+				log_error! (0x33bfb4c6, "failed executing symlink for `{}`:  unsupported descriptor", _target_path_0_display);
+				_failed = true;
+			}
+			
+			TargetOperation::MakeDir => {
+				if let Err (_error) = fs::create_dir (_target_path_0) {
+					log_error! (0x68f2f8b2, "failed executing mkdir for `{}`:  {}", _target_path_0_display, _error);
+					_failed = true;
+				}
+			}
+			
+			TargetOperation::MakeSymlink { link : _link } => {
+				if let Err (_error) = fs_unix::symlink (_link, _target_path_0) {
+					log_error! (0x5a1fffca, "failed executing symlink for `{}`:  {}", _target_path_0_display, _error);
+					_failed = true;
+				}
+			}
+		}
+		
+		if ! _failed {
+			_descriptors_succeeded.push (_descriptor);
+		} else {
+			_descriptors_failed.push (_descriptor);
+		}
+	}
 	
 	return Ok (());
 }

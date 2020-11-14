@@ -86,6 +86,10 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 		) ?;
 	log_cut! ();
 	
+	if true {
+		fsas::trace_descriptors (_descriptors_required.iter (), Some ("descriptors required:"));
+	}
+	
 	log_cut! ();
 	log_notice! (0xc38cec3a, "executing...");
 	execute (

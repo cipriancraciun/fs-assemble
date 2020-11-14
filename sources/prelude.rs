@@ -16,6 +16,10 @@ pub(crate) use ::std::ops;
 pub(crate) use ::std::path;
 pub(crate) use ::std::process;
 
+pub(crate) use ::std::os::unix::ffi as ffi_unix;
+pub(crate) use ::std::os::unix::fs as fs_unix;
+
+
 pub(crate) use ::globset;
 pub(crate) use ::regex::bytes as regexb;
 pub(crate) use ::walkdir;
