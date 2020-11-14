@@ -49,7 +49,7 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 	}
 	
 	
-	fail! (0x84c61b84, "not implemented!");
+	fail_unimplemented! (0x84c61b84);
 }
 
 

@@ -11,6 +11,12 @@ macro_rules! fail {
 	};
 }
 
+macro_rules! fail_unimplemented {
+	( $_code : expr ) => {
+		return Err ($crate::tools::error ($_code, format_args! ("not implemented")));
+	};
+}
+
 
 
 
