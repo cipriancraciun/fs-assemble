@@ -25,7 +25,6 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 			.push_copy ("/sources", "/sources")
 			.push_make_dir ("/1/2/3/4")
 			.push_protect ("/target/**")
-			.push_make_symlink ("/target/null", "/dev/null")
 			.push_unlink ("/**");
 	
 	

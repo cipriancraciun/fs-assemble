@@ -707,7 +707,13 @@ fn prune_unlink (_targets_unlink_0 : TargetDescriptorMap, _targets_create : &Tar
 					unreachable! (),
 				
 				TargetOperation::Copy { source : _source } => {
-					if _source.is_dir {
+					if ! _source.is_dir {
+						if let Some (_target) = &_descriptor_unlink.existing {
+							if ! (_target.is_dir && ! _target.is_symlink) {
+								_keep = false;
+							}
+						}
+					} else {
 						unreachable! ();
 					}
 				}
