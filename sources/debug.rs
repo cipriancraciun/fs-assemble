@@ -6,39 +6,12 @@ use crate::rules::*;
 
 
 
-pub(crate) fn trace_plan_create (_descriptors : &TargetDescriptorMap) -> () {
+pub(crate) fn trace_descriptors <'a> (_descriptors : impl Iterator<Item = &'a TargetDescriptor>, _message : Option<&str>) -> () {
 	
-	log_cut! ();
-	log_debug! (0x975bea76, "targets planned for creation:");
-	trace_descriptors (_descriptors.values ());
-	log_cut! ();
-}
-
-pub(crate) fn trace_plan_protect (_descriptors : &TargetDescriptorMap) -> () {
-	
-	log_cut! ();
-	log_debug! (0x5fb7bc98, "targets planned for protection:");
-	trace_descriptors (_descriptors.values ());
-	log_cut! ();
-}
-
-pub(crate) fn trace_plan_unlink (_descriptors : &TargetDescriptorMap) -> () {
-	
-	log_cut! ();
-	log_debug! (0xd71d0ef0, "targets planned for unlinking:");
-	trace_descriptors (_descriptors.values ());
-	log_cut! ();
-}
-
-pub(crate) fn trace_plan_skipped (_descriptors : &TargetDescriptorVec) -> () {
-	
-	log_cut! ();
-	log_debug! (0x547cad62, "targets skipped:");
-	trace_descriptors (_descriptors.iter ());
-	log_cut! ();
-}
-
-pub(crate) fn trace_descriptors <'a> (_descriptors : impl Iterator<Item = &'a TargetDescriptor>) -> () {
+	if let Some (_message) = _message {
+		log_cut! ();
+		log_debug! (0x16bda71d, "{}", _message);
+	}
 	
 	let mut _handled_none = true;
 	
@@ -49,6 +22,10 @@ pub(crate) fn trace_descriptors <'a> (_descriptors : impl Iterator<Item = &'a Ta
 	
 	if _handled_none {
 		log_debug! (0xb6addc1a, "* none");
+	}
+	
+	if _message.is_some () {
+		log_cut! ();
 	}
 }
 
@@ -71,18 +48,19 @@ pub(crate) fn trace_descriptor (_descriptor : &TargetDescriptor) -> () {
 }
 
 
-pub(crate) fn trace_sources_unhandled (_sources_existing : &EntryMap, _sources_handled : &PathSet) -> () {
+
+
+pub(crate) fn trace_entries <'a> (_entries : impl Iterator<Item = &'a Entry>, _message : Option<&str>) -> () {
 	
-	log_cut! ();
-	log_debug! (0xc1da0330, "sources unhandled:");
+	if let Some (_message) = _message {
+		log_cut! ();
+		log_debug! (0xc1da0330, "{}", _message);
+	}
 	
 	let mut _handled_none = true;
 	
-	for _entry in _sources_existing.values () {
+	for _entry in _entries {
 		if _entry.depth == 0 {
-			continue;
-		}
-		if _sources_handled.contains (&_entry.path) {
 			continue;
 		}
 		_handled_none = false;
@@ -93,32 +71,8 @@ pub(crate) fn trace_sources_unhandled (_sources_existing : &EntryMap, _sources_h
 		log_debug! (0xbc33de37, "* none");
 	}
 	
-	log_cut! ();
-}
-
-
-pub(crate) fn trace_targets_unhandled (_targets_existing : &EntryMap, _targets_handled : &PathSet) -> () {
-	
-	log_cut! ();
-	log_debug! (0xb9728c78, "targets unhandled:");
-	
-	let mut _handled_none = true;
-	
-	for _entry in _targets_existing.values () {
-		if _entry.depth == 0 {
-			continue;
-		}
-		if _targets_handled.contains (&_entry.path) {
-			continue;
-		}
-		_handled_none = false;
-		log_debug! (0xfbb6fba3, "* `{}`", _entry.path_display ());
+	if _message.is_some () {
+		log_cut! ();
 	}
-	
-	if _handled_none {
-		log_debug! (0x4b943c3b, "* none");
-	}
-	
-	log_cut! ();
 }
 

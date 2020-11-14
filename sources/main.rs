@@ -30,34 +30,80 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 	
 	
 	log_cut! ();
-	log_notice! (0x787ec493, "indexing source path `{}`...", _source_root.display ());
-	let mut _source_entries = Vec::with_capacity (16 * 1024);
-	index (_source_root, &_source_filter, &mut _source_entries) ?;
+	log_notice! (0x787ec493, "indexing source `{}`...", _source_root.display ());
+	let mut _sources_existing = EntryVec::new ();
+	let mut _sources_unhandled = EntryVec::new ();
+	index (_source_root, &_source_filter, &mut _sources_existing) ?;
 	log_cut! ();
 	
 	log_cut! ();
-	log_notice! (0xcb4b5581, "indexing target path `{}`...", _target_root.display ());
-	let mut _target_entries = Vec::with_capacity (16 * 1024);
-	index (_target_root, &_target_filter, &mut _target_entries) ?;
+	log_notice! (0xcb4b5581, "indexing target `{}`...", _target_root.display ());
+	let mut _targets_existing = EntryVec::new ();
+	let mut _targets_unhandled = EntryVec::new ();
+	index (_target_root, &_target_filter, &mut _targets_existing) ?;
 	log_cut! ();
+	
+	let mut _descriptors_planned = TargetDescriptorVec::new ();
+	let mut _descriptors_skipped = TargetDescriptorVec::new ();
 	
 	log_cut! ();
 	log_notice! (0x7827e63b, "planning...");
-	let _plan = plan (&_target_rules, _source_root, _source_entries, _target_root, _target_entries) ?;
+	let _plan = plan (
+			&_target_rules,
+			_source_root,
+			_sources_existing,
+			&mut _sources_unhandled,
+			_target_root,
+			_targets_existing,
+			&mut _targets_unhandled,
+			&mut _descriptors_planned,
+			&mut _descriptors_skipped,
+		) ?;
 	log_cut! ();
+	
+	if true {
+		trace_entries (_sources_unhandled.iter (), Some ("sources unhandled:"));
+		trace_entries (_targets_unhandled.iter (), Some ("targets unhandled:"));
+	}
 	
 	log_cut! ();
 	log_notice! (0x01f9fc36, "verifying...");
-	verify (&_plan) ?;
+	verify (&_descriptors_planned) ?;
+	log_cut! ();
+	
+	let mut _descriptors_required = TargetDescriptorVec::new ();
+	let mut _descriptors_succeeded = TargetDescriptorVec::new ();
+	let mut _descriptors_failed = TargetDescriptorVec::new ();
+	
+	log_cut! ();
+	log_notice! (0x6982871d, "simplifying...");
+	simplify (
+			_source_root,
+			_target_root,
+			_descriptors_planned,
+			&mut _descriptors_required,
+			&mut _descriptors_skipped,
+		) ?;
 	log_cut! ();
 	
 	log_cut! ();
-	for _descriptor in _plan.iter () {
-		log_debug! (0xb7c38713, "{:?}", _descriptor);
+	log_notice! (0xc38cec3a, "executing...");
+	execute (
+			_source_root,
+			_target_root,
+			_descriptors_required,
+			&mut _descriptors_succeeded,
+			&mut _descriptors_failed,
+		) ?;
+	log_cut! ();
+	
+	if true {
+		trace_descriptors (_descriptors_failed.iter (), Some ("descriptors failed:"));
+		trace_descriptors (_descriptors_succeeded.iter (), Some ("descriptors succeeded:"));
+		trace_descriptors (_descriptors_skipped.iter (), Some ("descriptors skipped:"));
 	}
-	log_cut! ();
 	
-	fail_unimplemented! (0x84c61b84);
+	return Ok (());
 }
 
 

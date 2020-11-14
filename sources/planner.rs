@@ -6,13 +6,22 @@ use crate::rules::*;
 
 
 
-pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : EntryVec, _targets_root : &Path, _targets : EntryVec) -> Outcome<TargetDescriptorVec> {
+pub fn plan (
+			_rules : &TargetRules,
+			_sources_root : &Path,
+			_sources_existing : EntryVec,
+			_sources_unhandled : &mut EntryVec,
+			_targets_root : &Path,
+			_targets_existing : EntryVec,
+			_targets_unhandled : &mut EntryVec,
+			_descriptors_planned : &mut TargetDescriptorVec,
+			_descriptors_skipped : &mut TargetDescriptorVec,
+		) -> Outcome<()> {
 	
-	
-	let mut _sources_existing = fsas::build_tree (_sources) ?;
+	let mut _sources_existing = fsas::build_tree (_sources_existing) ?;
 	let mut _sources_handled = PathSet::new ();
 	
-	let mut _targets_existing = fsas::build_tree (_targets) ?;
+	let mut _targets_existing = fsas::build_tree (_targets_existing) ?;
 	let mut _targets_handled = PathSet::new ();
 	
 	let mut _targets_pending = TargetDescriptorVec::new ();
@@ -37,19 +46,31 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : EntryVec, 
 	let mut _targets_create = TargetDescriptorMap::new ();
 	prune_create (_sources_root, _targets_root, _targets_create_0, &mut _targets_protect, &mut _targets_create, &mut _targets_skipped) ?;
 	
-	fsas::trace_plan_create (&_targets_create);
-	fsas::trace_plan_protect (&_targets_protect);
-	fsas::trace_plan_unlink (&_targets_unlink);
-	fsas::trace_plan_skipped (&_targets_skipped);
-	fsas::trace_sources_unhandled (&_sources_existing, &_sources_handled);
-	fsas::trace_targets_unhandled (&_targets_existing, &_targets_handled);
+	if false {
+		fsas::trace_descriptors (_targets_create.values (), Some ("descriptors planned for creation:"));
+		fsas::trace_descriptors (_targets_protect.values (), Some ("descriptors planned for protection:"));
+		fsas::trace_descriptors (_targets_unlink.values (), Some ("descriptors planned for unlinking:"));
+		fsas::trace_descriptors (_targets_skipped.iter (), Some ("descriptors skipped:"));
+	}
 	
-	let mut _targets_planned = TargetDescriptorVec::new ();
-	_targets_planned.extend (_targets_protect.into_iter () .map (|(_, _descriptor)| _descriptor));
-	_targets_planned.extend (_targets_unlink.into_iter () .rev () .map (|(_, _descriptor)| _descriptor));
-	_targets_planned.extend (_targets_create.into_iter () .map (|(_, _descriptor)| _descriptor));
+	for (_, _source) in _sources_existing.into_iter () {
+		if ! _sources_handled.contains (&_source.path) {
+			_sources_unhandled.push (_source);
+		}
+	}
+	for (_, _target) in _targets_existing.into_iter () {
+		if ! _targets_handled.contains (&_target.path) {
+			_targets_unhandled.push (_target);
+		}
+	}
 	
-	return Ok (_targets_planned);
+	_descriptors_planned.extend (_targets_protect.into_iter () .map (|(_, _descriptor)| _descriptor));
+	_descriptors_planned.extend (_targets_unlink.into_iter () .map (|(_, _descriptor)| _descriptor) .rev ());
+	_descriptors_planned.extend (_targets_create.into_iter () .map (|(_, _descriptor)| _descriptor));
+	
+	_descriptors_skipped.extend (_targets_skipped.into_iter ());
+	
+	return Ok (());
 }
 
 
@@ -445,7 +466,7 @@ fn sift_targets (_rules : &TargetRules, _targets_existing : &EntryMap, _targets_
 
 fn sift_directives (_rules : &TargetRules, _targets_existing : &EntryMap, _targets_pending : &mut TargetDescriptorVec) -> Outcome<()> {
 	
-	log_debug! (0xcc7d8038, "sifting directives...");
+	log_debug! (0xcc7d8038, "sifting rules...");
 	
 	for _rule in _rules.rules.iter () {
 		match _rule {
@@ -628,7 +649,7 @@ fn extend_mkdir (_targets_existing : &EntryMap, _targets_pending : &TargetDescri
 
 fn sort_targets (_targets_pending : TargetDescriptorVec, _targets_protect : &mut TargetDescriptorMap, _targets_unlink : &mut TargetDescriptorMap, _targets_create : &mut TargetDescriptorMap) -> Outcome<()> {
 	
-	log_debug! (0x1e7e28ce, "sorting targets...");
+	log_debug! (0x1e7e28ce, "sorting descriptors...");
 	
 	let mut _targets_create_0 = TargetDescriptorVec::new ();
 	
