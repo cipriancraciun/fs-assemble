@@ -35,7 +35,7 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : EntryVec, 
 	prune_unlink (_targets_unlink_0, &_targets_create_0, &mut _targets_protect, &mut _targets_unlink, &mut _targets_skipped) ?;
 	
 	let mut _targets_create = TargetDescriptorMap::new ();
-	prune_create (_sources_root, _targets_root, _targets_create_0, &_targets_protect, &mut _targets_create, &mut _targets_skipped) ?;
+	prune_create (_sources_root, _targets_root, _targets_create_0, &mut _targets_protect, &mut _targets_create, &mut _targets_skipped) ?;
 	
 	trace_plan_create (&_targets_create);
 	trace_plan_protect (&_targets_protect);
@@ -195,9 +195,9 @@ fn verify_plan (_targets_planned : &TargetDescriptorVec) -> Outcome<()> {
 			TargetOperation::MakeSymlink { .. } => {
 				if let Some (_target) = &_descriptor.existing {
 					if _target.is_dir && ! _target.is_symlink {
-						_should_exclude_unlink = true;
-					} else {
 						_should_include_unlink = true;
+					} else {
+						_should_exclude_unlink = true;
 					}
 				} else {
 					_should_exclude_unlink = true;
@@ -757,7 +757,7 @@ fn prune_unlink (_targets_unlink_0 : TargetDescriptorMap, _targets_create : &Tar
 
 
 
-fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_create_0 : TargetDescriptorMap, _targets_protect : &TargetDescriptorMap, _targets_create : &mut TargetDescriptorMap, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
+fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_create_0 : TargetDescriptorMap, _targets_protect : &mut TargetDescriptorMap, _targets_create : &mut TargetDescriptorMap, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
 	
 	log_debug! (0x067597d6, "pruning create...");
 	
@@ -799,48 +799,41 @@ fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_create_0
 					}
 				};
 				
-				let _skip = if let Some (_existing) = &_descriptor.existing {
-					_existing.is_symlink && OsString::eq (_existing.link.as_ref () .unwrap (), &_link)
-				} else {
-					false
-				};
-				
-				if _skip {
-					_targets_skipped.push (_descriptor);
-				} else {
-					let _descriptor = TargetDescriptor {
-							path : _descriptor.path.clone (),
-							existing : _descriptor.existing.clone (),
-							operation : TargetOperation::MakeSymlink {
-									link : _link,
-								},
-						};
-					_targets_pending.push (_descriptor);
-				}
+				let _descriptor = TargetDescriptor {
+						path : _descriptor.path.clone (),
+						existing : _descriptor.existing.clone (),
+						operation : TargetOperation::MakeSymlink {
+								link : _link,
+							},
+					};
+				_targets_pending.push (_descriptor);
 			}
 			
 			TargetOperation::MakeDir => {
-				if let Some (_existing) = &_descriptor.existing {
-					if _existing.is_dir && ! _existing.is_symlink {
-						_targets_skipped.push (_descriptor);
-					} else {
-						_targets_pending.push (_descriptor);
-					}
+				let _skip = if let Some (_existing) = &_descriptor.existing {
+					_existing.is_dir && ! _existing.is_symlink
 				} else {
+					false
+				};
+				if ! _skip {
 					_targets_pending.push (_descriptor);
+				} else {
+					if ! _targets_protect.contains_key (&_descriptor.path) {
+						let _descriptor = TargetDescriptor {
+								path : _descriptor.path.clone (),
+								existing : _descriptor.existing.clone (),
+								operation : TargetOperation::Protect,
+							};
+						if let Some (_descriptor) = _targets_protect.insert (_descriptor.path.clone (), _descriptor) {
+							unreachable! ();
+						}
+					}
+					_targets_skipped.push (_descriptor);
 				}
 			}
 			
 			TargetOperation::MakeSymlink { link : _link } => {
-				if let Some (_existing) = &_descriptor.existing {
-					if _existing.is_symlink && OsString::eq (_existing.link.as_ref () .unwrap (), _link) {
-						_targets_skipped.push (_descriptor);
-					} else {
-						_targets_pending.push (_descriptor);
-					}
-				} else {
-					_targets_pending.push (_descriptor);
-				}
+				_targets_pending.push (_descriptor);
 			}
 		}
 	}
