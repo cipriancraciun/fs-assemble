@@ -94,6 +94,7 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 			_descriptors_required,
 			&mut _descriptors_succeeded,
 			&mut _descriptors_failed,
+			&mut _descriptors_skipped,
 		) ?;
 	log_cut! ();
 	

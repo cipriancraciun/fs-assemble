@@ -27,6 +27,7 @@ pub(crate) use ::std::ffi::OsStr;
 pub(crate) use ::std::ffi::OsString;
 pub(crate) use ::std::os::unix::ffi::OsStrExt;
 pub(crate) use ::std::os::unix::ffi::OsStringExt;
+pub(crate) use ::std::os::unix::fs::MetadataExt;
 
 pub(crate) use ::std::path::Path;
 pub(crate) use ::std::path::PathBuf;
