@@ -10,6 +10,7 @@ default = []
 
 [dependencies]
 globset = "*"
+nix = "*"
 path-clean = "*"
 pathdiff = "*"
 regex = "*"
