@@ -3,6 +3,7 @@
 #![ allow (unused_imports) ]
 
 
+pub(crate) use ::std::cmp;
 pub(crate) use ::std::env;
 pub(crate) use ::std::fmt;
 pub(crate) use ::std::ffi;
@@ -27,6 +28,9 @@ pub(crate) use ::std::os::unix::ffi::OsStringExt;
 
 pub(crate) use ::std::path::Path;
 pub(crate) use ::std::path::PathBuf;
+
+pub(crate) use ::std::cmp::Ord;
+pub(crate) use ::std::cmp::Ordering;
 
 pub(crate) use ::std::ops::Bound;
 

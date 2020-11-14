@@ -44,10 +44,13 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 	log_cut! ();
 	log_notice! (0x7827e63b, "planning...");
 	let _target_entries = plan (&_target_rules, _source_root, _source_entries, _target_root, _target_entries) ?;
+	log_cut! ();
+	
+	log_cut! ();
 	for _target_entry in _target_entries.iter () {
 		log_debug! (0xb7c38713, "{:?}", _target_entry);
 	}
-	
+	log_cut! ();
 	
 	fail_unimplemented! (0x84c61b84);
 }

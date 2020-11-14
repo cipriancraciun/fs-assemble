@@ -15,33 +15,27 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : EntryVec, 
 	let mut _targets_existing = fsas::build_tree (_targets) ?;
 	let mut _targets_handled = PathSet::new ();
 	
-	
-	let mut _targets_planned = TargetDescriptorVec::new ();
-	
-	sift_sources (_rules, &_sources_existing, &mut _sources_handled, &_targets_existing, &mut _targets_planned) ?;
-	sift_targets (_rules, &_targets_existing, &mut _targets_handled, &mut _targets_planned) ?;
-	sift_directives (_rules, &_targets_existing, &mut _targets_planned) ?;
+	let mut _targets_pending = TargetDescriptorVec::new ();
+	sift_sources (_rules, &_sources_existing, &mut _sources_handled, &_targets_existing, &mut _targets_pending) ?;
+	sift_targets (_rules, &_targets_existing, &mut _targets_handled, &mut _targets_pending) ?;
+	sift_directives (_rules, &_targets_existing, &mut _targets_pending) ?;
 	
 	let mut _targets_extended = TargetDescriptorVec::new ();
-	extend_copy (&_sources_existing, &mut _sources_handled, &_targets_existing, &_targets_planned, &mut _targets_extended) ?;
-	_targets_planned.extend (_targets_extended.into_iter ());
-	
-	let mut _targets_extended = TargetDescriptorVec::new ();
-	extend_mkdir (&_targets_existing, &_targets_planned, &mut _targets_extended) ?;
-	_targets_planned.extend (_targets_extended.into_iter ());
+	extend_mkdir (&_targets_existing, &_targets_pending, &mut _targets_extended) ?;
+	extend_copy (&_sources_existing, &mut _sources_handled, &_targets_existing, &_targets_pending, &mut _targets_extended) ?;
 	
 	let mut _targets_protect = TargetDescriptorMap::new ();
 	let mut _targets_unlink_0 = TargetDescriptorMap::new ();
-	let mut _targets_pending = TargetDescriptorMap::new ();
-	
-	sort_targets (_targets_planned, &mut _targets_protect, &mut _targets_unlink_0, &mut _targets_pending) ?;
+	let mut _targets_create_0 = TargetDescriptorMap::new ();
+	sort_targets (_targets_extended, &mut _targets_protect, &mut _targets_unlink_0, &mut _targets_create_0) ?;
 	
 	let mut _targets_skipped = TargetDescriptorVec::new ();
-	let mut _targets_unlink = TargetDescriptorMap::new ();
-	let mut _targets_create = TargetDescriptorMap::new ();
 	
-	prune_unlink (_targets_unlink_0, &_targets_protect, &_targets_pending, &mut _targets_unlink, &mut _targets_skipped) ?;
-	prune_create (_sources_root, _targets_root, _targets_pending, &_targets_protect, &mut _targets_create, &mut _targets_skipped) ?;
+	let mut _targets_unlink = TargetDescriptorMap::new ();
+	prune_unlink (_targets_unlink_0, &_targets_create_0, &mut _targets_protect, &mut _targets_unlink, &mut _targets_skipped) ?;
+	
+	let mut _targets_create = TargetDescriptorMap::new ();
+	prune_create (_sources_root, _targets_root, _targets_create_0, &_targets_protect, &mut _targets_create, &mut _targets_skipped) ?;
 	
 	trace_plan_create (&_targets_create);
 	trace_plan_protect (&_targets_protect);
@@ -51,11 +45,231 @@ pub fn plan (_rules : &TargetRules, _sources_root : &Path, _sources : EntryVec, 
 	trace_targets_unhandled (&_targets_existing, &_targets_handled);
 	
 	let mut _targets_planned = TargetDescriptorVec::new ();
+	_targets_planned.extend (_targets_protect.into_iter () .map (|(_, _descriptor)| _descriptor));
 	_targets_planned.extend (_targets_unlink.into_iter () .rev () .map (|(_, _descriptor)| _descriptor));
 	_targets_planned.extend (_targets_create.into_iter () .map (|(_, _descriptor)| _descriptor));
-	_targets_planned.extend (_targets_protect.into_iter () .map (|(_, _descriptor)| _descriptor));
+	
+	verify_plan (&_targets_planned) ?;
 	
 	return Ok (_targets_planned);
+}
+
+
+
+
+fn verify_plan (_targets_planned : &TargetDescriptorVec) -> Outcome<()> {
+	
+	log_debug! (0xe1b5ac8e, "verifying plan...");
+	
+	let mut _targets_protect = PathSet::new ();
+	let mut _targets_unlink = PathSet::new ();
+	let mut _targets_create = PathSet::new ();
+	let mut _targets_dir = PathSet::new ();
+	
+	let mut _valid = true;
+	let mut _seen_protect = false;
+	let mut _seen_unlink = false;
+	let mut _seen_create = false;
+	
+	for _descriptor in _targets_planned.iter () {
+		
+		let _path = &_descriptor.path;
+		let _path_parent = Path::new (_path) .parent () .map (Path::as_os_str);
+		let _path_display = Path::new (_path) .display ();
+		
+		// ----
+		
+		match &_descriptor.operation {
+			
+			TargetOperation::Protect => {
+				if _seen_unlink {
+					log_error! (0xd2281c1c, "invalid plan for `{}`:  protect after unlink!", _path_display);
+					_valid = false;
+				}
+				if _seen_create {
+					log_error! (0x759a33b1, "invalid plan for `{}`:  protect after create!", _path_display);
+					_valid = false;
+				}
+				if _targets_unlink.contains (_path) {
+					log_error! (0x8920569c, "invalid plan for `{}`:  protect and unlink!", _path_display);
+					_valid = false;
+				}
+				if ! _targets_protect.insert (_path.clone ()) {
+					log_error! (0xcad46f98, "invalid plan for `{}`:  duplicate protect!", _path_display);
+					_valid = false;
+				}
+				if let Some (_target) = &_descriptor.existing {
+					if _target.is_dir && ! _target.is_symlink {
+						if ! _targets_dir.insert (_path.clone ()) {
+							log_error! (0xb9b6b547, "invalid plan for `{}`:  duplicate folder!", _path_display);
+							_valid = false;
+						}
+					}
+				} else {
+					log_error! (0x4e043540, "invalid plan for `{}`:  protect does not exist!", _path_display);
+					_valid = false;
+				}
+				_seen_protect = true;
+				continue;
+			}
+			
+			TargetOperation::Unlink => {
+				if _seen_create {
+					log_error! (0x347c2dc2, "invalid plan for `{}`:  unlink after create!", _path_display);
+					_valid = false;
+				}
+				if _targets_protect.contains (_path) {
+					log_error! (0x50da48f3, "invalid plan for `{}`:  protect and unlink!", _path_display);
+					_valid = false;
+				}
+				if ! _targets_unlink.insert (_path.clone ()) {
+					log_error! (0x204b283f, "invalid plan for `{}`:  duplicate unlink!", _path_display);
+					_valid = false;
+				}
+				if let Some (_path_parent) = _path_parent {
+					if _targets_unlink.contains (_path_parent) {
+						log_error! (0x7b26e762, "invalid plan for `{}`:  unlink after parent unlink!", _path_display);
+						_valid = false;
+					}
+				}
+				if let Some (_target) = &_descriptor.existing {
+					// NOP
+				} else {
+					log_error! (0x12cfd6fb, "invalid plan for `{}`:  unlink does not exist!", _path_display);
+					_valid = false;
+				}
+				_seen_unlink = true;
+				continue;
+			}
+			
+			_ => (),
+		}
+		
+		// ----
+		
+		let mut _should_include_unlink = false;
+		let mut _should_exclude_unlink = false;
+		
+		match &_descriptor.operation {
+			
+			TargetOperation::Protect =>
+				unreachable! (),
+			TargetOperation::Unlink =>
+				unreachable! (),
+			
+			TargetOperation::Copy { source : _source } => {
+				if ! _source.is_dir {
+					if let Some (_target) = &_descriptor.existing {
+						if _target.is_dir && ! _target.is_symlink {
+							_should_include_unlink = true;
+						} else {
+							_should_exclude_unlink = true;
+						}
+					} else {
+						_should_exclude_unlink = true;
+					}
+				} else {
+					unreachable! ();
+				}
+			}
+			
+			TargetOperation::Symlink { .. } =>
+				unreachable! (),
+			
+			TargetOperation::MakeDir => {
+				if let Some (_target) = &_descriptor.existing {
+					if _target.is_dir && ! _target.is_symlink {
+						_should_exclude_unlink = true;
+					} else {
+						_should_include_unlink = true;
+					}
+				} else {
+					_should_exclude_unlink = true;
+				}
+				if ! _targets_dir.insert (_path.clone ()) {
+					log_error! (0x0f5d2be3, "invalid plan for `{}`:  duplicate folder!", _path_display);
+					_valid = false;
+				}
+			}
+			
+			TargetOperation::MakeSymlink { .. } => {
+				if let Some (_target) = &_descriptor.existing {
+					if _target.is_dir && ! _target.is_symlink {
+						_should_exclude_unlink = true;
+					} else {
+						_should_include_unlink = true;
+					}
+				} else {
+					_should_exclude_unlink = true;
+				}
+			}
+		}
+		
+		
+		if _targets_protect.contains (_path) {
+			log_error! (0x260dd701, "invalid plan for `{}`:  protect and create!", _path_display);
+			_valid = false;
+		}
+		if ! _targets_create.insert (_path.clone ()) {
+			log_error! (0xbda03b7c, "invalid plan for `{}`:  duplicate create!", _path_display);
+			_valid = false;
+		}
+		if let Some (_path_parent) = _path_parent {
+			if ! _targets_dir.contains (_path_parent) {
+				log_error! (0xbf2b9fe8, "invalid plan for `{}`:  parent missing!", _path_display);
+				_valid = false;
+			}
+		}
+		if _should_include_unlink & ! _targets_unlink.contains (_path) {
+			log_error! (0x9dc8aaa8, "invalid plan for `{}`:  unlink missing!", _path_display);
+			_valid = false;
+		}
+		if _should_exclude_unlink && _targets_unlink.contains (_path) {
+			log_error! (0x250a90d0, "invalid plan for `{}`:  unlink superfluous!", _path_display);
+			_valid = false;
+		}
+		_seen_create = true;
+	}
+	
+	
+	for _descriptors in _targets_planned.windows (2) {
+		let _left = &_descriptors[0];
+		let _right = &_descriptors[1];
+		
+		let _ordering = match (&_left.operation, &_right.operation) {
+			
+			(TargetOperation::Protect, TargetOperation::Protect) =>
+				Some (Ordering::Less),
+			(TargetOperation::Protect, _) =>
+				None,
+			(_, TargetOperation::Protect) =>
+				None,
+			
+			(TargetOperation::Unlink, TargetOperation::Unlink) =>
+				Some (Ordering::Greater),
+			(TargetOperation::Unlink, _) =>
+				None,
+			(_, TargetOperation::Unlink) =>
+				None,
+			
+			(_, _) =>
+				Some (Ordering::Less),
+		};
+		
+		if let Some (_ordering) = _ordering {
+			if OsString::cmp (&_left.path, &_right.path) != _ordering {
+				log_error! (0xe1ddeeda, "invalid plan for `{}`:  ordering!", _right.path_display ());
+				_valid = false;
+			}
+		}
+	}
+	
+	
+	if _valid {
+		return Ok (());
+	} else {
+		fail! (0xe246ff0f, "invalid plan");
+	}
 }
 
 
@@ -73,7 +287,7 @@ type TargetDescriptorMap = BTreeMap<OsString, TargetDescriptor>;
 
 
 
-fn sift_sources (_rules : &TargetRules, _sources_existing : &EntryMap, _sources_handled : &mut PathSet, _targets_existing : &EntryMap, _targets_planned : &mut TargetDescriptorVec) -> Outcome<()> {
+fn sift_sources (_rules : &TargetRules, _sources_existing : &EntryMap, _sources_handled : &mut PathSet, _targets_existing : &EntryMap, _targets_pending : &mut TargetDescriptorVec) -> Outcome<()> {
 	
 	log_debug! (0x9f16c940, "sifting sources...");
 	
@@ -102,7 +316,7 @@ fn sift_sources (_rules : &TargetRules, _sources_existing : &EntryMap, _sources_
 										source : _source.clone (),
 									},
 							};
-						_targets_planned.push (_descriptor);
+						_targets_pending.push (_descriptor);
 						_handled = true;
 					}
 				
@@ -116,7 +330,7 @@ fn sift_sources (_rules : &TargetRules, _sources_existing : &EntryMap, _sources_
 										source : _source.clone (),
 									},
 							};
-						_targets_planned.push (_descriptor);
+						_targets_pending.push (_descriptor);
 						_handled = true;
 					}
 				
@@ -135,7 +349,7 @@ fn sift_sources (_rules : &TargetRules, _sources_existing : &EntryMap, _sources_
 										source : _source.clone (),
 									},
 							};
-						_targets_planned.push (_descriptor);
+						_targets_pending.push (_descriptor);
 						_handled = true;
 					}
 				
@@ -149,7 +363,7 @@ fn sift_sources (_rules : &TargetRules, _sources_existing : &EntryMap, _sources_
 										source : _source.clone (),
 									},
 							};
-						_targets_planned.push (_descriptor);
+						_targets_pending.push (_descriptor);
 						_handled = true;
 					}
 				
@@ -178,7 +392,7 @@ fn sift_sources (_rules : &TargetRules, _sources_existing : &EntryMap, _sources_
 
 
 
-fn sift_targets (_rules : &TargetRules, _targets_existing : &EntryMap, _targets_handled : &mut PathSet, _targets_planned : &mut TargetDescriptorVec) -> Outcome<()> {
+fn sift_targets (_rules : &TargetRules, _targets_existing : &EntryMap, _targets_handled : &mut PathSet, _targets_pending : &mut TargetDescriptorVec) -> Outcome<()> {
 	
 	log_debug! (0x1f72d23e, "sifting targets...");
 	
@@ -197,7 +411,7 @@ fn sift_targets (_rules : &TargetRules, _targets_existing : &EntryMap, _targets_
 								existing : Some (_target.clone ()),
 								operation : TargetOperation::Protect,
 							};
-						_targets_planned.push (_descriptor);
+						_targets_pending.push (_descriptor);
 						_handled = true;
 						break;
 					}
@@ -209,7 +423,7 @@ fn sift_targets (_rules : &TargetRules, _targets_existing : &EntryMap, _targets_
 								existing : Some (_target.clone ()),
 								operation : TargetOperation::Unlink,
 							};
-						_targets_planned.push (_descriptor);
+						_targets_pending.push (_descriptor);
 						_handled = true;
 						break;
 					}
@@ -242,7 +456,7 @@ fn sift_targets (_rules : &TargetRules, _targets_existing : &EntryMap, _targets_
 
 
 
-fn sift_directives (_rules : &TargetRules, _targets_existing : &EntryMap, _targets_planned : &mut TargetDescriptorVec) -> Outcome<()> {
+fn sift_directives (_rules : &TargetRules, _targets_existing : &EntryMap, _targets_pending : &mut TargetDescriptorVec) -> Outcome<()> {
 	
 	log_debug! (0xcc7d8038, "sifting directives...");
 	
@@ -256,7 +470,7 @@ fn sift_directives (_rules : &TargetRules, _targets_existing : &EntryMap, _targe
 						existing : _targets_existing.get (_target) .cloned (),
 						operation : TargetOperation::MakeDir,
 					};
-				_targets_planned.push (_descriptor);
+				_targets_pending.push (_descriptor);
 			}
 			
 			TargetRule::MakeSymlink { target : _target, link : _link } => {
@@ -267,7 +481,7 @@ fn sift_directives (_rules : &TargetRules, _targets_existing : &EntryMap, _targe
 								link : _link.clone (),
 							},
 					};
-				_targets_planned.push (_descriptor);
+				_targets_pending.push (_descriptor);
 			}
 			
 			
@@ -293,11 +507,11 @@ fn sift_directives (_rules : &TargetRules, _targets_existing : &EntryMap, _targe
 
 
 
-fn extend_copy (_sources_existing : &EntryMap, _sources_handled : &mut PathSet, _targets_existing : &EntryMap, _targets_planned : &TargetDescriptorVec, _targets_extended : &mut TargetDescriptorVec) -> Outcome<()> {
+fn extend_copy (_sources_existing : &EntryMap, _sources_handled : &mut PathSet, _targets_existing : &EntryMap, _targets_pending : &TargetDescriptorVec, _targets_extended : &mut TargetDescriptorVec) -> Outcome<()> {
 	
 	log_debug! (0x62d40e83, "extending copy...");
 	
-	for _target_1 in _targets_planned.iter () {
+	for _target_1 in _targets_pending.iter () {
 		
 		let _source_1 = match &_target_1.operation {
 			
@@ -305,12 +519,22 @@ fn extend_copy (_sources_existing : &EntryMap, _sources_handled : &mut PathSet, 
 				if _source_1.is_dir {
 					_source_1
 				} else {
+					_targets_extended.push (_target_1.clone ());
 					continue;
 				}
 			
-			_ =>
-				continue,
+			_ => {
+				_targets_extended.push (_target_1.clone ());
+				continue;
+			}
 		};
+		
+		let _target_0 = TargetDescriptor {
+				path : _target_1.path.clone (),
+				existing : _target_1.existing.clone (),
+				operation : TargetOperation::MakeDir,
+			};
+		_targets_extended.push (_target_0);
 		
 		for (_, _source_2) in _sources_existing.range::<OsString, _> ((Bound::Excluded (&_source_1.path), Bound::Unbounded)) {
 			
@@ -339,14 +563,14 @@ fn extend_copy (_sources_existing : &EntryMap, _sources_handled : &mut PathSet, 
 
 
 
-fn extend_mkdir (_targets_existing : &EntryMap, _targets_planned : &TargetDescriptorVec, _targets_extended : &mut TargetDescriptorVec) -> Outcome<()> {
+fn extend_mkdir (_targets_existing : &EntryMap, _targets_pending : &TargetDescriptorVec, _targets_extended : &mut TargetDescriptorVec) -> Outcome<()> {
 	
 	log_debug! (0x1e7e28ce, "extending mkdir...");
 	
 	let mut _mkdir_include = PathSet::new ();
 	let mut _mkdir_exclude = PathSet::new ();
 	
-	for _descriptor in _targets_planned.iter () {
+	for _descriptor in _targets_pending.iter () {
 		
 		match _descriptor.operation {
 			
@@ -415,13 +639,13 @@ fn extend_mkdir (_targets_existing : &EntryMap, _targets_planned : &TargetDescri
 
 
 
-fn sort_targets (_targets_planned : TargetDescriptorVec, _targets_protect : &mut TargetDescriptorMap, _targets_unlink : &mut TargetDescriptorMap, _targets_pending : &mut TargetDescriptorMap) -> Outcome<()> {
+fn sort_targets (_targets_pending : TargetDescriptorVec, _targets_protect : &mut TargetDescriptorMap, _targets_unlink : &mut TargetDescriptorMap, _targets_create : &mut TargetDescriptorMap) -> Outcome<()> {
 	
 	log_debug! (0x1e7e28ce, "sorting targets...");
 	
-	let mut _targets_pending_0 = TargetDescriptorVec::new ();
+	let mut _targets_create_0 = TargetDescriptorVec::new ();
 	
-	for _descriptor in _targets_planned.into_iter () {
+	for _descriptor in _targets_pending.into_iter () {
 		match _descriptor.operation {
 			TargetOperation::Protect =>
 				if let Some (_descriptor) = _targets_protect.insert (_descriptor.path.clone (), _descriptor) {
@@ -432,13 +656,13 @@ fn sort_targets (_targets_planned : TargetDescriptorVec, _targets_protect : &mut
 					log_warning! (0xa95058a9, "duplicate unlink encountered for `{}`;  ignoring!", _descriptor.path_display ());
 				}
 			_ =>
-				_targets_pending_0.push (_descriptor),
+				_targets_create_0.push (_descriptor),
 		}
 	}
 	
-	for _descriptor in _targets_pending_0.into_iter () {
+	for _descriptor in _targets_create_0.into_iter () {
 		
-		match _targets_pending.entry (_descriptor.path.clone ()) {
+		match _targets_create.entry (_descriptor.path.clone ()) {
 			
 			btree_map::Entry::Vacant (_cell) => {
 				_cell.insert (_descriptor);
@@ -457,21 +681,17 @@ fn sort_targets (_targets_planned : TargetDescriptorVec, _targets_protect : &mut
 
 
 
-fn prune_unlink (_targets_unlink : TargetDescriptorMap, _targets_protect : &TargetDescriptorMap, _targets_pending : &TargetDescriptorMap, _targets_planned : &mut TargetDescriptorMap, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
+fn prune_unlink (_targets_unlink_0 : TargetDescriptorMap, _targets_create : &TargetDescriptorMap, _targets_protect : &mut TargetDescriptorMap, _targets_unlink : &mut TargetDescriptorMap, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
 	
 	log_debug! (0x067597d6, "pruning unlink...");
 	
-	for (_, _descriptor_unlink) in _targets_unlink.into_iter () .rev () {
+	for (_, _descriptor_unlink) in _targets_unlink_0.into_iter () .rev () {
 		
 		let mut _keep = true;
+		let mut _protect = false;
 		
-		if let Some (_descriptor_protect) = _targets_protect.get (&_descriptor_unlink.path) {
-			log_error! (0x908583c1, "conflicting operations for path `{}`:  unlinked and protected;", _descriptor_unlink.path_display ());
-			fail! (0x7c1c742f, "conflicting operations for path `{}`", _descriptor_unlink.path_display ());
-		}
-		
-		if let Some (_descriptor_pending) = _targets_pending.get (&_descriptor_unlink.path) {
-			match &_descriptor_pending.operation {
+		if let Some (_descriptor_create) = _targets_create.get (&_descriptor_unlink.path) {
+			match &_descriptor_create.operation {
 				
 				TargetOperation::Protect =>
 					unreachable! (),
@@ -480,11 +700,7 @@ fn prune_unlink (_targets_unlink : TargetDescriptorMap, _targets_protect : &Targ
 				
 				TargetOperation::Copy { source : _source } => {
 					if _source.is_dir {
-						if let Some (_target) = &_descriptor_unlink.existing {
-							if _target.is_dir && ! _target.is_symlink && _source.is_dir {
-								_keep = false;
-							}
-						}
+						unreachable! ();
 					}
 				}
 				
@@ -500,6 +716,7 @@ fn prune_unlink (_targets_unlink : TargetDescriptorMap, _targets_protect : &Targ
 					if let Some (_target) = &_descriptor_unlink.existing {
 						if _target.is_dir && ! _target.is_symlink {
 							_keep = false;
+							_protect = true;
 						}
 					}
 				}
@@ -514,8 +731,19 @@ fn prune_unlink (_targets_unlink : TargetDescriptorMap, _targets_protect : &Targ
 			}
 		}
 		
+		if _protect {
+			let _descriptor = TargetDescriptor {
+					path : _descriptor_unlink.path.clone (),
+					existing : _descriptor_unlink.existing.clone (),
+					operation : TargetOperation::Protect,
+				};
+			if let Some (_descriptor) = _targets_protect.insert (_descriptor.path.clone (), _descriptor) {
+				unreachable! ();
+			}
+		}
+		
 		if _keep {
-			if let Some (_descriptor) = _targets_planned.insert (_descriptor_unlink.path.clone (), _descriptor_unlink) {
+			if let Some (_descriptor) = _targets_unlink.insert (_descriptor_unlink.path.clone (), _descriptor_unlink) {
 				unreachable! ();
 			}
 		} else {
@@ -529,13 +757,13 @@ fn prune_unlink (_targets_unlink : TargetDescriptorMap, _targets_protect : &Targ
 
 
 
-fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_pending : TargetDescriptorMap, _targets_protect : &TargetDescriptorMap, _targets_planned_0 : &mut TargetDescriptorMap, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
+fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_create_0 : TargetDescriptorMap, _targets_protect : &TargetDescriptorMap, _targets_create : &mut TargetDescriptorMap, _targets_skipped : &mut TargetDescriptorVec) -> Outcome<()> {
 	
 	log_debug! (0x067597d6, "pruning create...");
 	
-	let mut _targets_planned = TargetDescriptorVec::new ();
+	let mut _targets_pending = TargetDescriptorVec::new ();
 	
-	for (_, _descriptor) in _targets_pending.into_iter () {
+	for (_, _descriptor) in _targets_create_0.into_iter () {
 		match &_descriptor.operation {
 			
 			TargetOperation::Protect =>
@@ -544,7 +772,7 @@ fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_pending 
 				unreachable! (),
 			
 			TargetOperation::Copy { source : _source } => {
-				_targets_planned.push (_descriptor);
+				_targets_pending.push (_descriptor);
 			}
 			
 			TargetOperation::Symlink { source : _source } => {
@@ -587,7 +815,7 @@ fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_pending 
 									link : _link,
 								},
 						};
-					_targets_planned.push (_descriptor);
+					_targets_pending.push (_descriptor);
 				}
 			}
 			
@@ -596,10 +824,10 @@ fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_pending 
 					if _existing.is_dir && ! _existing.is_symlink {
 						_targets_skipped.push (_descriptor);
 					} else {
-						_targets_planned.push (_descriptor);
+						_targets_pending.push (_descriptor);
 					}
 				} else {
-					_targets_planned.push (_descriptor);
+					_targets_pending.push (_descriptor);
 				}
 			}
 			
@@ -608,17 +836,17 @@ fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_pending 
 					if _existing.is_symlink && OsString::eq (_existing.link.as_ref () .unwrap (), _link) {
 						_targets_skipped.push (_descriptor);
 					} else {
-						_targets_planned.push (_descriptor);
+						_targets_pending.push (_descriptor);
 					}
 				} else {
-					_targets_planned.push (_descriptor);
+					_targets_pending.push (_descriptor);
 				}
 			}
 		}
 	}
 	
-	for _descriptor in _targets_planned.into_iter () {
-		if let Some (_descriptor) = _targets_planned_0.insert (_descriptor.path.clone (), _descriptor) {
+	for _descriptor in _targets_pending.into_iter () {
+		if let Some (_descriptor) = _targets_create.insert (_descriptor.path.clone (), _descriptor) {
 			unreachable! ();
 		}
 	}
@@ -629,35 +857,35 @@ fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_pending 
 
 
 
-fn trace_plan_create (_targets_planned : &TargetDescriptorMap) -> () {
+fn trace_plan_create (_descriptors : &TargetDescriptorMap) -> () {
 	
 	log_cut! ();
 	log_debug! (0x975bea76, "targets planned for creation:");
-	trace_descriptors (_targets_planned.values ());
+	trace_descriptors (_descriptors.values ());
 	log_cut! ();
 }
 
-fn trace_plan_protect (_targets_protected : &TargetDescriptorMap) -> () {
+fn trace_plan_protect (_descriptors : &TargetDescriptorMap) -> () {
 	
 	log_cut! ();
 	log_debug! (0x5fb7bc98, "targets planned for protection:");
-	trace_descriptors (_targets_protected.values ());
+	trace_descriptors (_descriptors.values ());
 	log_cut! ();
 }
 
-fn trace_plan_unlink (_targets_protected : &TargetDescriptorMap) -> () {
+fn trace_plan_unlink (_descriptors : &TargetDescriptorMap) -> () {
 	
 	log_cut! ();
 	log_debug! (0xd71d0ef0, "targets planned for unlinking:");
-	trace_descriptors (_targets_protected.values ());
+	trace_descriptors (_descriptors.values ());
 	log_cut! ();
 }
 
-fn trace_plan_skipped (_targets_skipped : &TargetDescriptorVec) -> () {
+fn trace_plan_skipped (_descriptors : &TargetDescriptorVec) -> () {
 	
 	log_cut! ();
 	log_debug! (0x547cad62, "targets skipped:");
-	trace_descriptors (_targets_skipped.iter ());
+	trace_descriptors (_descriptors.iter ());
 	log_cut! ();
 }
 
