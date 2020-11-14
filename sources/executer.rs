@@ -18,8 +18,6 @@ pub fn execute (
 	for _descriptor in _descriptors_planned.into_iter () {
 		
 		let _target_path_1 = Path::new (&_descriptor.path);
-		let _target_path_1_parent = _target_path_1.parent ();
-		let _target_path_1_display = _target_path_1.display ();
 		
 		let _target_path_0 = _targets_root.join (_target_path_1.strip_prefix ("/") .unwrap ());
 		let _target_path_0 = &_target_path_0;
@@ -61,8 +59,24 @@ pub fn execute (
 				}
 			},
 			
-			TargetOperation::Copy { .. } => {
-				fail_unimplemented! (0x9d504886);
+			TargetOperation::Copy { source : _source } => {
+				
+				let _source_path_1 = Path::new (&_descriptor.path);
+				
+				let _source_path_0 = _sources_root.join (_source_path_1.strip_prefix ("/") .unwrap ());
+				let _source_path_0 = &_source_path_0;
+				let _source_path_0_display = _source_path_0.display ();
+				
+				if _source.is_file {
+					// FIXME:  Use temporary file name!
+					if let Err (_error) = fs::copy (_source_path_0, _target_path_0) {
+						log_error! (0x95cab520, "failed executing copy for `{}` from `{}`:  {}", _target_path_0_display, _source_path_0_display, _error);
+						_failed = true;
+					}
+				} else {
+					log_error! (0x21a927bf, "failed executing copy for `{}` from `{}`:  unsupported source", _target_path_0_display, _source_path_0_display);
+					_failed = true;
+				}
 			}
 			
 			TargetOperation::Symlink { .. } => {

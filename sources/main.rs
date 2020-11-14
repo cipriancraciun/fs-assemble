@@ -66,6 +66,10 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 		trace_entries (_targets_unhandled.iter (), Some ("targets unhandled:"));
 	}
 	
+	if true {
+		fsas::trace_descriptors (_descriptors_planned.iter (), Some ("descriptors planned:"));
+	}
+	
 	log_cut! ();
 	log_notice! (0x01f9fc36, "verifying...");
 	verify (&_descriptors_planned) ?;

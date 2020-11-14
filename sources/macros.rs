@@ -34,6 +34,15 @@ macro_rules! log_define {
 			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr ) => {
 				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2));
 			};
+			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr, $_argument_3 : expr ) => {
+				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2, $_argument_3));
+			};
+			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr, $_argument_3 : expr, $_argument_4 : expr ) => {
+				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2, $_argument_3, $_argument_4));
+			};
+			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr, $_argument_3 : expr, $_argument_4 : expr, $_argument_5 : expr ) => {
+				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2, $_argument_3, $_argument_4, $_argument_5));
+			};
 		}
 	}
 }
