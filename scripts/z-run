@@ -8,3 +8,8 @@
 :: debug / run / fs-assemble :: exec -- cargo run --bin fs-assemble -- "${@}"
 :: release / run / fs-assemble :: exec -- cargo run --bin fs-assemble --release -- "${@}"
 
+
+:: docs / crate / internals / build :: exec -- cargo doc --lib --no-deps --document-private-items "${@}"
+:: docs / crate / exports / build :: exec -- cargo doc --lib --no-deps "${@}"
+:: docs / dependencies / build :: exec -- cargo doc --lib "${@}"
+
