@@ -18,10 +18,8 @@ pub fn execute (
 	for _descriptor in _descriptors_planned.into_iter () {
 		
 		let _target_path_1 = Path::new (&_descriptor.path);
-		
 		let _target_path_0 = _targets_root.join (_target_path_1.strip_prefix ("/") .unwrap ());
 		let _target_path_0 = &_target_path_0;
-		let _target_path_0_parent = _target_path_0.parent ();
 		let _target_path_0_display = _target_path_0.display ();
 		
 		let mut _failed = false;
@@ -62,27 +60,10 @@ pub fn execute (
 			TargetOperation::Copy { source : _source } => {
 				
 				let _source_path_1 = Path::new (&_descriptor.path);
-				
 				let _source_path_0 = _sources_root.join (_source_path_1.strip_prefix ("/") .unwrap ());
 				let _source_path_0 = &_source_path_0;
-				let _source_path_0_display = _source_path_0.display ();
 				
-				if _source.is_file {
-					// FIXME:  Use temporary file name!
-					if let Err (_error) = fs::copy (_source_path_0, _target_path_0) {
-						log_error! (0x95cab520, "failed executing copy for `{}` from `{}`:  {}", _target_path_0_display, _source_path_0_display, _error);
-						_failed = true;
-					}
-					let _target_atime = nix::TimeValLike::nanoseconds ((_source.metadata_follow.atime () * 1_000_000_000) + _source.metadata_follow.atime_nsec ());
-					let _target_mtime = nix::TimeValLike::nanoseconds ((_source.metadata_follow.mtime () * 1_000_000_000) + _source.metadata_follow.mtime_nsec ());
-					if let Err (_error) = nix::lutimes (_target_path_0, &_target_atime, &_target_mtime) {
-						log_error! (0x6e0b1ee3, "failed executing utimes for `{}`:  {}", _target_path_0_display, _error);
-						_failed = true;
-					}
-				} else {
-					log_error! (0x21a927bf, "failed executing copy for `{}` from `{}`:  unsupported source", _target_path_0_display, _source_path_0_display);
-					_failed = true;
-				}
+				_failed = ! execute_copy (_target_path_0, _source_path_0, _source) ?;
 			}
 			
 			TargetOperation::Symlink { .. } => {
@@ -113,6 +94,68 @@ pub fn execute (
 	}
 	
 	return Ok (());
+}
+
+
+
+
+pub fn execute_copy (_target_path_0 : &Path, _source_path_0 : &Path, _source : &Entry) -> Outcome<bool> {
+	
+	let _target_path_0_display = _target_path_0.display ();
+	let _source_path_0_display = _source_path_0.display ();
+	
+	if _source.is_file {
+		
+		let mut _temp_builder = tempfile::Builder::new ();
+		_temp_builder
+				.prefix (".fsas")
+				.suffix (".tmp")
+				.rand_bytes (16);
+		
+		let _temp_file = if let Some (_temp_parent_0) = _target_path_0.parent () {
+			match _temp_builder.tempfile_in (_temp_parent_0) {
+				Ok (_temp_file) =>
+					_temp_file.into_temp_path (),
+				Err (_error) => {
+					log_error! (0xb88c5290, "failed executing copy for `{}`:  {}", _target_path_0_display, _error);
+					return Ok (false);
+				}
+			}
+		} else {
+			log_error! (0xad7e37a1, "failed executing copy for `{}`:  invalid parent", _target_path_0_display);
+			return Ok (false);
+		};
+		
+		let _target_temp_0 : &Path = _temp_file.as_ref ();
+		
+		if let Err (_error) = fs::copy (_source_path_0, _target_temp_0) {
+			log_error! (0x95cab520, "failed executing copy for `{}` from `{}`:  {}", _target_path_0_display, _source_path_0_display, _error);
+			return Ok (false);
+		}
+		
+		let _target_atime = nix::TimeValLike::nanoseconds ((_source.metadata_follow.atime () * 1_000_000_000) + _source.metadata_follow.atime_nsec ());
+		let _target_mtime = nix::TimeValLike::nanoseconds ((_source.metadata_follow.mtime () * 1_000_000_000) + _source.metadata_follow.mtime_nsec ());
+		if let Err (_error) = nix::lutimes (_target_temp_0, &_target_atime, &_target_mtime) {
+			log_error! (0x6e0b1ee3, "failed executing utimes for `{}`:  {}", _target_path_0_display, _error);
+			return Ok (false);
+		}
+		
+		if let Err (_error) = fs::rename (_target_temp_0, _target_path_0) {
+			log_error! (0xb146252c, "failed executing rename for `{}`:  {}", _target_path_0_display, _error);
+			return Ok (false);
+		}
+		
+		if let Err (_error) = _temp_file.keep () {
+			log_error! (0x5125a953, "failed executing copy for `{}`:  {}", _target_path_0_display, _error);
+			return Ok (false);
+		}
+		
+		return Ok (true);
+		
+	} else {
+		log_error! (0x21a927bf, "failed executing copy for `{}` from `{}`:  unsupported source", _target_path_0_display, _source_path_0_display);
+		return Ok (false);
+	}
 }
 
 
