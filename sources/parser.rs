@@ -17,10 +17,10 @@ peg::parser! {
 			= (
 				statement_copy_simple_1() /
 				statement_copy_simple_2() /
-				statement_copy() /
+				statement_copy_find() /
 				statement_symlink_simple_1() /
 				statement_symlink_simple_2() /
-				statement_symlink() /
+				statement_symlink_find() /
 				statement_make_dir() /
 				statement_make_symlink() /
 				statement_protect() /
@@ -29,16 +29,16 @@ peg::parser! {
 		
 		
 		pub rule statement_copy_simple_1 () -> Statement
-			= "copy" space() _target:path() statement_end()
+			= "copy" ws() _target:path() statement_end()
 			{ Statement::TargetRule (TargetRule::Copy { source : EntrySelector::if_matches_path_exact (&_target), target : _target.into () }) }
 		
 		pub rule statement_copy_simple_2 () -> Statement
-			= "copy" space() "to" space() _target:path() space() "from" space() _source:path() statement_end()
+			= "copy" ws() "to" ws() _target:path() ws() "from" ws() _source:path() statement_end()
 			{ Statement::TargetRule (TargetRule::Copy { source : EntrySelector::if_matches_path_exact (&_source), target : _target.into () }) }
 		
-		pub rule statement_copy () -> Statement
-			= "copy" space() "to" space() _target:path() space() _source:selector() statement_end()
-			{ Statement::TargetRule (TargetRule::Copy { source : _source, target : _target.into () }) }
+		pub rule statement_copy_find () -> Statement
+			= "copy" ws() "to" ws() _target:path() ws() "find" ws() _source:selector() statement_end()
+			{ Statement::TargetRule (TargetRule::CopyFlatten { source : _source, target : _target.into () }) }
 		
 		
 		pub rule statement_symlink_simple_1 () -> Statement
@@ -46,46 +46,42 @@ peg::parser! {
 			{ Statement::TargetRule (TargetRule::Symlink { source : EntrySelector::if_matches_path_exact (&_target), target : _target.into () }) }
 		
 		pub rule statement_symlink_simple_2 () -> Statement
-			= "symlink" space() "to" space() _target:path() space() "from" space() _source:path() statement_end()
+			= "symlink" ws() "to" ws() _target:path() ws() "from" ws() _source:path() statement_end()
 			{ Statement::TargetRule (TargetRule::Symlink { source : EntrySelector::if_matches_path_exact (&_source), target : _target.into () }) }
 		
-		pub rule statement_symlink () -> Statement
-			= "symlink" space() "to" space() _target:path() space() _source:selector() statement_end()
-			{ Statement::TargetRule (TargetRule::Symlink { source : _source, target : _target.into () }) }
+		pub rule statement_symlink_find () -> Statement
+			= "symlink" ws() "to" ws() _target:path() ws() "find" _source:selector() statement_end()
+			{ Statement::TargetRule (TargetRule::SymlinkFlatten { source : _source, target : _target.into () }) }
 		
 		
 		pub rule statement_make_dir () -> Statement
-			= "mkdir" space() _target:path() statement_end()
+			= "mkdir" ws() _target:path() statement_end()
 			{ Statement::TargetRule (TargetRule::MakeDir { target : _target.into () }) }
 		
 		pub rule statement_make_symlink () -> Statement
-			= "symlink" space() "to" space() _target:path() space() "external" _link:path() statement_end()
+			= "symlink" ws() "to" ws() _target:path() ws() "external" _link:path() statement_end()
 			{ Statement::TargetRule (TargetRule::MakeSymlink { target : _target.into (), link : _link.into () }) }
 		
 		
 		pub rule statement_protect () -> Statement
-			= "protect" space() _target:selector() statement_end()
+			= "protect" ws() _target:selector() statement_end()
 			{ Statement::TargetRule (TargetRule::Protect { target : _target.into () }) }
 		
 		pub rule statement_unlink () -> Statement
-			= "unlink" space() _target:selector() statement_end()
+			= "unlink" ws() _target:selector() statement_end()
 			{ Statement::TargetRule (TargetRule::Unlink { target : _target.into () }) }
 		
 		
 		rule statement_end () -> ()
-			= space()? ";"
+			= ws()? ";"
 			{ () }
 		
 		
 		
 		
 		pub rule script () -> Script
-			= space()? _statements:statement()**( space()? ) space()?
-			{
-				Script {
-						statements : _statements,
-					}
-			}
+			= ws()? _statements:statement()**( ws()? ) ws()?
+			{ Script { statements : _statements } }
 		
 		
 		
@@ -99,17 +95,52 @@ peg::parser! {
 		
 		pub rule matcher () -> EntryMatcher
 			= (
-				matcher_from() /
-				matcher_glob()
+				matcher_path() /
+				matcher_name() /
+				_pattern:pattern() { EntryMatcher::Path (_pattern) } /
+				_path:path() { EntryMatcher::Path (Pattern::exact (&_path)) }
 			)
 		
-		pub rule matcher_from () -> EntryMatcher
-			= "exact" space() _path:path()
-			{ EntryMatcher::Path (Pattern::exact (&_path)) }
+		pub rule matcher_path () -> EntryMatcher
+			= "path" ws() _pattern:pattern()
+			{ EntryMatcher::Path (_pattern) }
 		
-		pub rule matcher_glob () -> EntryMatcher
-			= "glob" space() _pattern:path()
-			{ EntryMatcher::Path (Pattern::glob (&_pattern) .unwrap ()) }
+		pub rule matcher_name () -> EntryMatcher
+			= "name" ws() _pattern:pattern()
+			{ EntryMatcher::Name (_pattern) }
+		
+		
+		
+		
+		pub rule pattern () -> Pattern
+			= (
+				pattern_exact () /
+				pattern_prefix () /
+				pattern_suffix () /
+				pattern_glob () /
+				pattern_regex ()
+			)
+		
+		pub rule pattern_exact () -> Pattern
+			= "exact" ws() _path:path()
+			{ Pattern::exact (&_path) }
+		
+		pub rule pattern_prefix () -> Pattern
+			= "prefix" ws() _path:path()
+			{ Pattern::prefix (&_path) }
+		
+		pub rule pattern_suffix () -> Pattern
+			= "suffix" ws() _path:path()
+			{ Pattern::suffix (&_path) }
+		
+		pub rule pattern_glob () -> Pattern
+			= "glob" ws() _pattern:path()
+			{ Pattern::glob (&_pattern) .unwrap () }
+		
+		pub rule pattern_regex () -> Pattern
+			= "regex" ws() _pattern:path()
+			{ Pattern::regex (&_pattern) .unwrap () }
+		
 		
 		
 		
@@ -152,11 +183,26 @@ peg::parser! {
 		
 		
 		pub rule space () -> ()
-			= quiet!{ ( [' '|'\t'] / newline() )+ / ( [' '|'\t']+ ( ['\\'] newline() )+ [' '|'\t']* )+ }
+			= quiet!{ [' '|'\t']+ / ( [' '|'\t']+ ( ['\\'] newline() )+ [' '|'\t']* )+ }
 			{ () }
 		
 		pub rule newline () -> ()
 			= quiet!{ ['\n'] / ( ['\r'] ['\n'] ) }
+			{ () }
+		
+		pub rule comment () -> ()
+			= quiet!{ ( ['#'] ( !newline() [_] )* newline() )+ }
+			{ () }
+		
+		pub rule ws () -> ()
+			= quiet!{
+				(
+					space() comment() /
+					space() /
+					newline() comment() /
+					newline()
+				)+
+			}
 			{ () }
 	}
 }

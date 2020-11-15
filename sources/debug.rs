@@ -141,13 +141,13 @@ impl fmt::Debug for Pattern {
 			Pattern::Exact (_pattern) =>
 				_formatter.debug_tuple ("Exact") .field (_pattern) .finish (),
 			Pattern::Prefix (_pattern) =>
-				_formatter.debug_tuple ("Exact") .field (_pattern) .finish (),
+				_formatter.debug_tuple ("Prefix") .field (_pattern) .finish (),
 			Pattern::Suffix (_pattern) =>
-				_formatter.debug_tuple ("Exact") .field (_pattern) .finish (),
+				_formatter.debug_tuple ("Suffix") .field (_pattern) .finish (),
 			Pattern::Glob (_pattern, _source) =>
-				_formatter.debug_tuple ("Exact") .field (_source) .finish (),
+				_formatter.debug_tuple ("Glob") .field (_source) .finish (),
 			Pattern::Regex (_pattern, _source) =>
-				_formatter.debug_tuple ("Exact") .field (_source) .finish (),
+				_formatter.debug_tuple ("Regex") .field (_source) .finish (),
 		}
 	}
 }

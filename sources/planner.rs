@@ -33,10 +33,20 @@ pub fn plan (
 	extend_mkdir (&_targets_existing, &_targets_pending, &mut _targets_extended) ?;
 	extend_copy (&_sources_existing, &mut _sources_handled, &_targets_existing, &_targets_pending, &mut _targets_extended) ?;
 	
+	if false {
+		fsas::trace_descriptors (_targets_extended.iter (), Some ("descriptors collected:"));
+	}
+	
 	let mut _targets_protect = TargetDescriptorMap::new ();
 	let mut _targets_unlink_0 = TargetDescriptorMap::new ();
 	let mut _targets_create_0 = TargetDescriptorMap::new ();
 	sort_targets (_targets_extended, &mut _targets_protect, &mut _targets_unlink_0, &mut _targets_create_0) ?;
+	
+	if false {
+		fsas::trace_descriptors (_targets_create_0.values (), Some ("descriptors collected for creation:"));
+		fsas::trace_descriptors (_targets_protect.values (), Some ("descriptors collected for protection:"));
+		fsas::trace_descriptors (_targets_unlink_0.values (), Some ("descriptors collected for unlinking:"));
+	}
 	
 	let mut _targets_skipped = TargetDescriptorVec::new ();
 	
