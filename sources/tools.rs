@@ -11,7 +11,7 @@ pub type Outcome<Value> = Result<Value, io::Error>;
 
 
 pub(crate) fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt::Display) -> () {
-	if _level < 20000 {
+	if (_level != 0) && (_level < DUMP_LOG_LEVEL) {
 		return;
 	}
 	match (_slug, _code) {
@@ -30,7 +30,10 @@ pub(crate) fn log (_slug : &str, _level : u16, _code : u32, _message : impl fmt:
 	}
 }
 
-pub(crate) fn log_cut () -> () {
+pub(crate) fn log_cut (_forced : bool) -> () {
+	if ! DUMP_LOG_CUT && ! _forced {
+		return;
+	}
 	unsafe {
 		if _log_cut_last {
 			return;

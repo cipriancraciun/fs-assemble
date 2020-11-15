@@ -7,6 +7,7 @@
 
 pub(crate) use crate::fsas;
 pub(crate) use crate::tools::Outcome;
+pub(crate) use crate::settings::*;
 
 
 

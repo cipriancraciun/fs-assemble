@@ -13,11 +13,11 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 	
 	
 	log_cut! ();
-	log_notice! (0x96598390, "loading script `{}`...", _script_path.display ());
+	log_information! (0x96598390, "loading script `{}`...", _script_path.display ());
 	let _script = parse (_script_path) ?;
 	log_cut! ();
 	
-	if true {
+	if DUMP_SCRIPT {
 		trace_script (&_script, Some ("script:"));
 	}
 	
@@ -52,14 +52,14 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 	
 	
 	log_cut! ();
-	log_notice! (0x787ec493, "indexing source `{}`...", _source_root.display ());
+	log_information! (0x787ec493, "indexing source `{}`...", _source_root.display ());
 	let mut _sources_existing = EntryVec::new ();
 	let mut _sources_unhandled = EntryVec::new ();
 	index (_source_root, &_source_filter, &mut _sources_existing) ?;
 	log_cut! ();
 	
 	log_cut! ();
-	log_notice! (0xcb4b5581, "indexing target `{}`...", _target_root.display ());
+	log_information! (0xcb4b5581, "indexing target `{}`...", _target_root.display ());
 	let mut _targets_existing = EntryVec::new ();
 	let mut _targets_unhandled = EntryVec::new ();
 	index (_target_root, &_target_filter, &mut _targets_existing) ?;
@@ -73,7 +73,7 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 	let mut _descriptors_skipped = TargetDescriptorVec::new ();
 	
 	log_cut! ();
-	log_notice! (0x7827e63b, "planning...");
+	log_information! (0x7827e63b, "planning...");
 	let _plan = plan (
 			&_target_rules,
 			_source_root,
@@ -87,17 +87,19 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 		) ?;
 	log_cut! ();
 	
-	if true {
+	if DUMP_SOURCES_UNHANDLED {
 		trace_entries (_sources_unhandled.iter (), Some ("sources unhandled:"));
+	}
+	if DUMP_TARGETS_UNHANDLED {
 		trace_entries (_targets_unhandled.iter (), Some ("targets unhandled:"));
 	}
 	
-	if true {
+	if DUMP_DESCRIPTORS_PLANNED {
 		trace_descriptors (_descriptors_planned.iter (), Some ("descriptors planned:"));
 	}
 	
 	log_cut! ();
-	log_notice! (0x01f9fc36, "verifying...");
+	log_information! (0x01f9fc36, "verifying (1)...");
 	verify (&_descriptors_planned) ?;
 	log_cut! ();
 	
@@ -110,7 +112,7 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 	let mut _descriptors_failed = TargetDescriptorVec::new ();
 	
 	log_cut! ();
-	log_notice! (0x6982871d, "simplifying...");
+	log_information! (0x6982871d, "simplifying...");
 	simplify (
 			_source_root,
 			_target_root,
@@ -120,12 +122,12 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 		) ?;
 	log_cut! ();
 	
-	if true {
+	if DUMP_DESCRIPTORS_REQUIRED {
 		trace_descriptors (_descriptors_required.iter (), Some ("descriptors required:"));
 	}
 	
 	log_cut! ();
-	log_notice! (0x4dfe419e, "verifying...");
+	log_information! (0x4dfe419e, "verifying (2)...");
 	verify (&_descriptors_required) ?;
 	log_cut! ();
 	
@@ -134,7 +136,7 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 	
 	
 	log_cut! ();
-	log_notice! (0xc38cec3a, "executing...");
+	log_information! (0xc38cec3a, "executing...");
 	execute (
 			_source_root,
 			_target_root,
@@ -145,9 +147,13 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 		) ?;
 	log_cut! ();
 	
-	if true {
+	if DUMP_DESCRIPTORS_FAILED {
 		trace_descriptors (_descriptors_failed.iter (), Some ("descriptors failed:"));
+	}
+	if DUMP_DESCRIPTORS_SUCCEEDED {
 		trace_descriptors (_descriptors_succeeded.iter (), Some ("descriptors succeeded:"));
+	}
+	if DUMP_DESCRIPTORS_SKIPPED {
 		trace_descriptors (_descriptors_skipped.iter (), Some ("descriptors skipped:"));
 	}
 	

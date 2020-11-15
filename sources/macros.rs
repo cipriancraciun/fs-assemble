@@ -21,7 +21,7 @@ macro_rules! fail_unimplemented {
 
 
 macro_rules! log_define {
-	( $_name : ident, $_slug : literal, $_level : literal ) => {
+	( $_name : ident, $_slug : literal, $_level : expr ) => {
 		
 		#[ allow (unused_macros) ]
 		macro_rules! $_name {
@@ -47,17 +47,25 @@ macro_rules! log_define {
 	}
 }
 
-log_define! (log_error, "[ee]", 60000);
-log_define! (log_warning, "[ww]", 50000);
-log_define! (log_notice, "[ii]", 40000);
-log_define! (log_information, "[ii]", 30000);
-log_define! (log_debug, "[dd]", 20000);
-log_define! (log_trace, "[dd]", 10000);
+log_define! (log_error, "[ee]", crate::settings::LOG_LEVEL_ERROR);
+log_define! (log_warning, "[ww]", crate::settings::LOG_LEVEL_WARNING);
+log_define! (log_notice, "[ii]", crate::settings::LOG_LEVEL_NOTICE);
+log_define! (log_information, "[ii]", crate::settings::LOG_LEVEL_INFORMATION);
+log_define! (log_debug, "[dd]", crate::settings::LOG_LEVEL_DEBUG);
+log_define! (log_trace, "[dd]", crate::settings::LOG_LEVEL_TRACE);
+log_define! (log_dump, "[dd]", 0);
 
 #[ allow (unused_macros) ]
 macro_rules! log_cut {
 	() => {
-		$crate::tools::log_cut ();
+		$crate::tools::log_cut (false);
+	};
+}
+
+#[ allow (unused_macros) ]
+macro_rules! log_dump_cut {
+	() => {
+		$crate::tools::log_cut (true);
 	};
 }
 

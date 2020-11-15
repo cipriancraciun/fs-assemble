@@ -14,6 +14,7 @@ pub(crate) mod parser;
 pub(crate) mod planner;
 pub(crate) mod prelude;
 pub(crate) mod rules;
+pub(crate) mod settings;
 pub(crate) mod tools;
 
 
@@ -36,6 +37,7 @@ pub mod fsas {
 	pub use crate::parser::*;
 	pub use crate::planner::*;
 	pub use crate::rules::*;
+	pub use crate::settings::*;
 	pub use crate::tools::*;
 }
 

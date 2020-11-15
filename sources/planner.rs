@@ -33,7 +33,7 @@ pub fn plan (
 	extend_mkdir (&_targets_existing, &_targets_pending, &mut _targets_extended) ?;
 	extend_copy (&_sources_existing, &mut _sources_handled, &_targets_existing, &_targets_pending, &mut _targets_extended) ?;
 	
-	if false {
+	if DUMP_DESCRIPTORS_PLANNING {
 		fsas::trace_descriptors (_targets_extended.iter (), Some ("descriptors collected:"));
 	}
 	
@@ -42,7 +42,7 @@ pub fn plan (
 	let mut _targets_create_0 = TargetDescriptorMap::new ();
 	sort_targets (_targets_extended, &mut _targets_protect, &mut _targets_unlink_0, &mut _targets_create_0) ?;
 	
-	if false {
+	if DUMP_DESCRIPTORS_PLANNING {
 		fsas::trace_descriptors (_targets_create_0.values (), Some ("descriptors collected for creation:"));
 		fsas::trace_descriptors (_targets_protect.values (), Some ("descriptors collected for protection:"));
 		fsas::trace_descriptors (_targets_unlink_0.values (), Some ("descriptors collected for unlinking:"));
@@ -56,7 +56,7 @@ pub fn plan (
 	let mut _targets_create = TargetDescriptorMap::new ();
 	prune_create (_sources_root, _targets_root, _targets_create_0, &mut _targets_protect, &mut _targets_create, &mut _targets_skipped) ?;
 	
-	if false {
+	if DUMP_DESCRIPTORS_PLANNING {
 		fsas::trace_descriptors (_targets_create.values (), Some ("descriptors planned for creation:"));
 		fsas::trace_descriptors (_targets_protect.values (), Some ("descriptors planned for protection:"));
 		fsas::trace_descriptors (_targets_unlink.values (), Some ("descriptors planned for unlinking:"));
