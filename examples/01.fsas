@@ -1,0 +1,36 @@
+
+
+# NOTE:  When considering inputs, exclude everything under `.git` from inputs root.
+exclude glob '/.git/**';
+
+# NOTE:  When considering inputs, exclude (perhaps recursively) `target` from inputs root.
+exclude '/target';
+
+# NOTE:  Also exclude all hidden inputs (i.e. whose name start with an `.`).
+exclude is hidden;
+
+
+# NOTE:  Copy `Cargo.toml` from inputs root into outputs root.
+copy '/Cargo.toml';
+
+# NOTE:  Symlink `Cargo.lock` from inputs root into outputs root.
+symlink '/Cargo.lock';
+
+# NOTE:  Copy (perhaps recursively) `sources` from inputs root into outputs root as `src`.
+copy to '/src' from '/sources';
+
+# NOTE:  All of the following are equivalent!  (Note how `**` requires us to exclude folders.)
+#-- copy to '/src' find glob '/sources/*';
+#-- copy to '/src' find when all { path glob '/sources/**', is file };
+#-- copy to '/src' find when all { path glob '/sources/**', is not folder };
+
+
+# NOTE:  Ensure that the `target` folder exists into outputs root.
+mkdir '/target';
+
+# NOTE:  Don't touch any existing files under the `target` folder within outputs root.
+protect glob '/target/**';
+
+# NOTE:  Remove from outputs root all entities not protected.
+unlink glob '/**';
+
