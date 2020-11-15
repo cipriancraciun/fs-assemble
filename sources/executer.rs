@@ -86,6 +86,15 @@ pub fn execute (
 			
 			TargetOperation::MakeSymlink { link : _link } => {
 				if EXECUTION_ALLOWED {
+					// FIXME:  Plan an unlink instead of this!
+					if let Some (_existing) = &_descriptor.existing {
+						if _existing.is_symlink {
+							if let Err (_error) = fs::remove_file (_target_path_0) {
+								log_error! (0xc69b29f0, "failed executing symlink for `{}`:  {}", _target_path_0_display, _error);
+								_failed = true;
+							}
+						}
+					}
 					if let Err (_error) = fs_unix::symlink (_link, _target_path_0) {
 						log_error! (0x5a1fffca, "failed executing symlink for `{}`:  {}", _target_path_0_display, _error);
 						_failed = true;
