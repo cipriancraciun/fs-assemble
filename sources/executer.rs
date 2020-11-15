@@ -108,7 +108,7 @@ pub fn execute_copy (_target_path_0 : &Path, _source_path_0 : &Path, _source : &
 		
 		let mut _temp_builder = tempfile::Builder::new ();
 		_temp_builder
-				.prefix (".fsas")
+				.prefix (".fsas.")
 				.suffix (".tmp")
 				.rand_bytes (16);
 		

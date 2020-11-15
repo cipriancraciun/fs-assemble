@@ -14,3 +14,6 @@
 :: docs / crate / exports / build :: exec -- cargo doc --lib --no-deps "${@}"
 :: docs / dependencies / build :: exec -- cargo doc --lib "${@}"
 
+
+:: test / 01-build :: exec -- z-run ':: debug / run / fs-assemble' ./examples/01-build.fsas . ./examples/.experiments/outputs/01-build
+
