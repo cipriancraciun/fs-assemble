@@ -16,20 +16,37 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 	
 	loop {
 		
-		let _entry = match _walker.next () {
+		let _build_entry = match _walker.next () {
 			Some (Ok (_entry)) =>
-				_entry,
-			Some (Err (_error)) => {
-				log_error! (0xacf7a441, "unexpected error encountered while indexing;  ignoring!  ||  {}", _error);
-				continue;
-			}
+				build_entry (_root, _entry),
+			Some (Err (_walk_error)) =>
+				if let Some (_io_error) = _walk_error.io_error () {
+					match _io_error.kind () {
+						io::ErrorKind::NotFound => {
+							let _path = _walk_error.path () .unwrap ();
+							match fs::symlink_metadata (_path) {
+								Ok (_metadata) =>
+									build_entry_0 (_root, _path.into (), _metadata.file_type () .is_symlink (), _metadata.file_type (), _walk_error.depth ()),
+								Err (_) => {
+									log_error! (0x69898a65, "unexpected error encountered while indexing;  ignoring!  ||  {}", _walk_error);
+									continue;
+								}
+							}
+						}
+						_ => {
+							log_error! (0xaaf7a4db, "unexpected error encountered while indexing;  ignoring!  ||  {}", _walk_error);
+							continue;
+						}
+					}
+				} else {
+					log_error! (0xacf7a441, "unexpected error encountered while indexing;  ignoring!  ||  {}", _walk_error);
+					continue;
+				}
 			None =>
 				break,
 		};
 		
-		log_trace! (0xa54d097c, "indexing `{}`...", _entry.path () .display ());
-		
-		let _entry = match build_entry (_root, _entry) {
+		let _entry = match _build_entry {
 			Ok (_entry) =>
 				_entry,
 			Err (_error) => {
@@ -37,6 +54,8 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 				continue;
 			}
 		};
+		
+		log_trace! (0xa54d097c, "indexing `{}`...", _entry.path_display ());
 		
 		let _decision = match _filter.filter (&_entry) {
 			Ok (_decision) =>
@@ -86,10 +105,18 @@ pub(crate) fn build_tree (_entries : Vec<fsas::Entry>) -> Outcome<BTreeMap<OsStr
 
 fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
 	
-	let _is_dir = _entry.file_type () .is_dir ();
 	let _is_symlink = _entry.path_is_symlink ();
+	let _file_type = _entry.file_type ();
 	let _depth = _entry.depth ();
 	let _path = _entry.into_path ();
+	
+	return build_entry_0 (_root, _path, _is_symlink, _file_type, _depth);
+}
+
+
+fn build_entry_0 (_root : &Path, _path : PathBuf, _is_symlink : bool, _file_type : fs::FileType, _depth : usize) -> Outcome<fsas::Entry> {
+	
+	let _is_dir = _file_type.is_dir ();
 	
 	let _relative_path = match _path.strip_prefix (_root) {
 		Ok (_stripped_path) =>
@@ -135,7 +162,9 @@ fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<fsas::Entr
 			Ok (_metadata) =>
 				_metadata,
 			Err (_error) =>
-				fail! (0xe43078c0, "failed `stat` for path `{}`:  {}", _path.display (), _error),
+				// FIXME:  Make "follow" metadata optional.
+				// fail! (0xa73c51e5, "failed `stat` for path `{}`:  {}", _path.display (), _error),
+				_metadata_symlink.clone (),
 		}
 	} else {
 		_metadata_symlink.clone ()
