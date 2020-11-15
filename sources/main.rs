@@ -132,7 +132,9 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 	log_cut! ();
 	
 	if DUMP_DESCRIPTORS_REQUIRED {
-		trace_descriptors (_descriptors_required.iter (), Some ("descriptors required:"));
+		trace_descriptors (
+				_descriptors_required.iter () .filter (|_descriptor| if let TargetOperation::Protect = _descriptor.operation { false } else { true }),
+				Some ("descriptors required:"));
 	}
 	
 	log_cut! ();
