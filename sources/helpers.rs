@@ -15,8 +15,8 @@ impl IndexRules {
 				rules : Vec::new (),
 				symlinks_collect : true,
 				symlinks_recurse : true,
-				hidden_collect : false,
-				hidden_recurse : false,
+				hidden_collect : true,
+				hidden_recurse : true,
 				fallback_collect : true,
 				fallback_recurse : true,
 			};

@@ -26,12 +26,7 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 	
 	
 	let mut _source_filter = IndexRules::new_for_source ();
-	_source_filter
-			.push_exclude (EntrySelector::if_matches_path (Pattern::exact ("/.git")))
-			.push_exclude (EntrySelector::if_matches_path (Pattern::exact ("/target")));
-	
 	let mut _target_filter = IndexRules::new_for_target ();
-	
 	let mut _target_rules = TargetRules::new ();
 	
 	for _statement in _script.statements.iter () {
@@ -42,8 +37,8 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 			Statement::TargetIndexOption (_) =>
 				fail_unimplemented! (0x32734cee),
 			
-			Statement::SourceIndexRule (_) =>
-				fail_unimplemented! (0xebabd060),
+			Statement::SourceIndexRule (_rule) =>
+				_source_filter.rules.push (_rule.clone ()),
 			Statement::TargetIndexRule (_) =>
 				fail_unimplemented! (0x7855c3be),
 			

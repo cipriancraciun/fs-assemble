@@ -24,7 +24,9 @@ peg::parser! {
 				statement_make_dir() /
 				statement_make_symlink() /
 				statement_protect() /
-				statement_unlink()
+				statement_unlink() /
+				statement_include() /
+				statement_exclude()
 			)
 		
 		
@@ -78,6 +80,15 @@ peg::parser! {
 		
 		
 		
+		pub rule statement_include () -> Statement
+			= "include" ws() _selector:selector() statement_end()
+			{ Statement::SourceIndexRule (IndexRule::Include { selector : _selector }) }
+		
+		pub rule statement_exclude () -> Statement
+			= "exclude" ws() _selector:selector() statement_end()
+			{ Statement::SourceIndexRule (IndexRule::Exclude { selector : _selector }) }
+		
+		
 		
 		pub rule script () -> Script
 			= ws()? _statements:statement()**( ws()? ) ws()?
@@ -98,24 +109,36 @@ peg::parser! {
 			)
 		
 		pub rule selector_matcher () -> EntrySelector
-			= _matcher:matcher()
+			= ( "when" / "if" ws() )? _matcher:matcher()
 			{ EntrySelector::Matches (_matcher) }
 		
 		pub rule selector_negate () -> EntrySelector
-			= "not" ws() _selector:selector()
+			= ( "unless" / "if" ws() "not" / "not" ) ws() _selector:selector()
 			{ _selector.negate () }
 		
 		pub rule selector_when_all () -> EntrySelector
-			= "when" ws() "all" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
-			{ EntrySelector::All (_selectors) }
+			= (
+				( "when" / "if" ) ws() "all" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+					{ EntrySelector::All (_selectors) } /
+				( "unless" / "if" ws() "not" ) ws() "all" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+					{ EntrySelector::All (_selectors) .negate () }
+			)
 		
 		pub rule selector_when_any () -> EntrySelector
-			= "when" ws() "any" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
-			{ EntrySelector::Any (_selectors) }
+			= (
+				( "when" / "if" ) ws() "any" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+					{ EntrySelector::Any (_selectors) } /
+				( "unless" / "if" ws() "not" ) ws() "any" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+					{ EntrySelector::Any (_selectors) .negate () }
+			)
 		
 		pub rule selector_when_none () -> EntrySelector
-			= "when" ws() "none" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
-			{ EntrySelector::None (_selectors) }
+			= (
+				( "when" / "if" ) ws() "none" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+					{ EntrySelector::None (_selectors) } /
+				( "unless" / "if" ws() "not" ) ws() "none" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+					{ EntrySelector::None (_selectors) .negate () }
+			)
 		
 		
 		
