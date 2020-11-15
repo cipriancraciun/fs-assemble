@@ -185,12 +185,12 @@ pub fn verify (_targets_planned : &TargetDescriptorVec) -> Outcome<()> {
 				unreachable! (),
 			
 			TargetOperation::Copy { source : _source } => {
-				if ! _source.is_dir {
+				if _source.is_file {
 					if let Some (_target) = &_descriptor.existing {
-						if _target.is_dir && ! _target.is_symlink {
-							_should_include_unlink = true;
-						} else {
+						if _target.is_file && ! _target.is_symlink {
 							_should_exclude_unlink = true;
+						} else {
+							_should_include_unlink = true;
 						}
 					} else {
 						_should_exclude_unlink = true;
@@ -224,10 +224,10 @@ pub fn verify (_targets_planned : &TargetDescriptorVec) -> Outcome<()> {
 			
 			TargetOperation::MakeSymlink { .. } => {
 				if let Some (_target) = &_descriptor.existing {
-					if _target.is_dir && ! _target.is_symlink {
-						_should_include_unlink = true;
-					} else {
+					if _target.is_symlink {
 						_should_exclude_unlink = true;
+					} else {
+						_should_include_unlink = true;
 					}
 				} else {
 					_should_exclude_unlink = true;
@@ -717,9 +717,9 @@ fn prune_unlink (_targets_unlink_0 : TargetDescriptorMap, _targets_create : &Tar
 					unreachable! (),
 				
 				TargetOperation::Copy { source : _source } => {
-					if ! _source.is_dir {
+					if _source.is_file {
 						if let Some (_target) = &_descriptor_unlink.existing {
-							if ! (_target.is_dir && ! _target.is_symlink) {
+							if _target.is_file && ! _target.is_symlink {
 								_keep = false;
 							}
 						}
