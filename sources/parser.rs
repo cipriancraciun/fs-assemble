@@ -15,18 +15,23 @@ peg::parser! {
 		
 		pub rule statement () -> Statement
 			= (
+				
 				statement_copy_simple_1() /
 				statement_copy_simple_2() /
 				statement_copy_find() /
+				
 				statement_symlink_simple_1() /
 				statement_symlink_simple_2() /
 				statement_symlink_find() /
+				
 				statement_make_dir() /
 				statement_make_symlink() /
+				
 				statement_protect() /
 				statement_unlink() /
-				statement_include() /
-				statement_exclude()
+				
+				statement_index_options() /
+				statement_index_rules()
 			)
 		
 		
@@ -80,13 +85,44 @@ peg::parser! {
 		
 		
 		
-		pub rule statement_include () -> Statement
-			= "include" ws() _selector:selector() statement_end()
-			{ Statement::SourceIndexRule (IndexRule::Include { selector : _selector }) }
+		pub rule statement_index_rules () -> Statement
+			= (
+				( "source" ws() )? _rule:statement_index_rule() statement_end() { Statement::SourceIndexRules (vec! [_rule]) } /
+				"target" ws() _rule:statement_index_rule() statement_end() { Statement::TargetIndexRules (vec! [_rule]) }
+			)
 		
-		pub rule statement_exclude () -> Statement
-			= "exclude" ws() _selector:selector() statement_end()
-			{ Statement::SourceIndexRule (IndexRule::Exclude { selector : _selector }) }
+		pub rule statement_index_rule () -> IndexRule
+			= (
+				"include" ws() _selector:selector() { IndexRule::Include { selector : _selector } } /
+				"exclude" ws() _selector:selector() { IndexRule::Exclude { selector : _selector } }
+			)
+		
+		
+		pub rule statement_index_options () -> Statement
+			= (
+				"set" ws() "source" ws() _option:statement_index_option() statement_end() { Statement::SourceIndexOptions (vec! [_option]) } /
+				"set" ws() "target" ws() _option:statement_index_option() statement_end() { Statement::TargetIndexOptions (vec! [_option]) }
+			)
+		
+		pub rule statement_index_option () -> IndexOption
+			= (
+				
+				"symlinks" ws() "recurse" { IndexOption::SymlinksRecurse (true) } /
+				"symlinks" ws() "no" ws() "recurse" { IndexOption::SymlinksRecurse (false) } /
+				"hidden" ws() "recurse" { IndexOption::HiddenRecurse (true) } /
+				"hidden" ws() "no" ws() "recurse" { IndexOption::HiddenRecurse (false) } /
+				"fallback" ws() "recurse" { IndexOption::FallbackRecurse (true) } /
+				"fallback" ws() "no" ws() "recurse" { IndexOption::FallbackRecurse (false) } /
+				
+				"symlinks" ws() "collect" { IndexOption::SymlinksCollect (true) } /
+				"symlinks" ws() "no" ws() "collect" { IndexOption::SymlinksCollect (false) } /
+				"hidden" ws() "collect" { IndexOption::HiddenCollect (true) } /
+				"hidden" ws() "no" ws() "collect" { IndexOption::HiddenCollect (false) } /
+				"fallback" ws() "collect" { IndexOption::FallbackCollect (true) } /
+				"fallback" ws() "no" ws() "collect" { IndexOption::FallbackCollect (false) }
+				
+			)
+		
 		
 		
 		
@@ -119,7 +155,8 @@ peg::parser! {
 		pub rule selector_when_all () -> EntrySelector
 			= (
 				( "when" / "if" ) ws() "all" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
-					{ EntrySelector::All (_selectors) } /
+					{ EntrySelector::All (_selectors) }
+			/
 				( "unless" / "if" ws() "not" ) ws() "all" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
 					{ EntrySelector::All (_selectors) .negate () }
 			)
@@ -127,7 +164,8 @@ peg::parser! {
 		pub rule selector_when_any () -> EntrySelector
 			= (
 				( "when" / "if" ) ws() "any" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
-					{ EntrySelector::Any (_selectors) } /
+					{ EntrySelector::Any (_selectors) }
+			/
 				( "unless" / "if" ws() "not" ) ws() "any" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
 					{ EntrySelector::Any (_selectors) .negate () }
 			)
@@ -135,7 +173,8 @@ peg::parser! {
 		pub rule selector_when_none () -> EntrySelector
 			= (
 				( "when" / "if" ) ws() "none" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
-					{ EntrySelector::None (_selectors) } /
+					{ EntrySelector::None (_selectors) }
+			/
 				( "unless" / "if" ws() "not" ) ws() "none" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
 					{ EntrySelector::None (_selectors) .negate () }
 			)
@@ -230,9 +269,9 @@ peg::parser! {
 			=
 				"'"
 				_span:$( (
-					( !['\\'|'\''] [_] )
-					/ ( ['\\'] ['\\'] )
-					/ ( ['\\'] ['\''] )
+					( !['\\'|'\''] [_] ) /
+					( ['\\'] ['\\'] ) /
+					( ['\\'] ['\''] )
 				)* )
 				"'"
 			{
@@ -252,11 +291,17 @@ peg::parser! {
 		
 		
 		pub rule space () -> ()
-			= quiet!{ [' '|'\t']+ / ( [' '|'\t']+ ( ['\\'] newline() )+ [' '|'\t']* )+ }
+			= quiet!{
+				[' '|'\t']+ /
+				( [' '|'\t']+ ( ['\\'] newline() )+ [' '|'\t']* )+
+			}
 			{ () }
 		
 		pub rule newline () -> ()
-			= quiet!{ ['\n'] / ( ['\r'] ['\n'] ) }
+			= quiet!{
+				['\n'] /
+				( ['\r'] ['\n'] )
+			}
 			{ () }
 		
 		pub rule comment () -> ()
@@ -264,14 +309,12 @@ peg::parser! {
 			{ () }
 		
 		pub rule ws () -> ()
-			= quiet!{
-				(
-					space() comment() /
-					space() /
-					newline() comment() /
-					newline()
-				)+
-			}
+			= quiet!{ (
+				space() comment() /
+				space() /
+				newline() comment() /
+				newline()
+			)+ }
 			{ () }
 	}
 }
@@ -282,11 +325,12 @@ peg::parser! {
 #[ derive (Clone) ]
 #[ derive (Debug) ]
 pub enum Statement {
-	SourceIndexOption (IndexOption),
-	SourceIndexRule (IndexRule),
-	TargetIndexOption (IndexOption),
-	TargetIndexRule (IndexRule),
+	SourceIndexOptions (Vec<IndexOption>),
+	SourceIndexRules (Vec<IndexRule>),
+	TargetIndexOptions (Vec<IndexOption>),
+	TargetIndexRules (Vec<IndexRule>),
 	TargetRule (TargetRule),
+	TargetRules (Vec<TargetRule>),
 }
 
 

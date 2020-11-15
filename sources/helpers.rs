@@ -45,6 +45,28 @@ impl IndexRules {
 		self.rules.push (IndexRule::exclude (_selector));
 		self
 	}
+	
+	
+	pub fn push_option (&mut self, _option : IndexOption) -> &mut Self {
+		match _option {
+			
+			IndexOption::SymlinksRecurse (_flag) =>
+				self.symlinks_recurse = _flag,
+			IndexOption::SymlinksCollect (_flag) =>
+				self.symlinks_collect = _flag,
+			
+			IndexOption::HiddenRecurse (_flag) =>
+				self.hidden_recurse = _flag,
+			IndexOption::HiddenCollect (_flag) =>
+				self.hidden_collect = _flag,
+			
+			IndexOption::FallbackRecurse (_flag) =>
+				self.fallback_recurse = _flag,
+			IndexOption::FallbackCollect (_flag) =>
+				self.fallback_collect = _flag,
+		}
+		self
+	}
 }
 
 

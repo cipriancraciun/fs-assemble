@@ -1,4 +1,7 @@
 
+# NOTE:  When considering inputs, do not cross symlinks.
+set source symlinks no recurse;
+
 
 # NOTE:  When considering inputs, exclude everything under `.git` from inputs root.
 exclude glob '/.git/**';

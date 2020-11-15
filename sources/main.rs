@@ -32,18 +32,24 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 	for _statement in _script.statements.iter () {
 		match _statement {
 			
-			Statement::SourceIndexOption (_) =>
-				fail_unimplemented! (0x9b62e004),
-			Statement::TargetIndexOption (_) =>
-				fail_unimplemented! (0x32734cee),
+			Statement::SourceIndexOptions (_options) =>
+				for _option in _options.iter () .cloned () {
+					_source_filter.push_option (_option);
+				}
+			Statement::TargetIndexOptions (_options) =>
+				for _option in _options.iter () .cloned () {
+					_target_filter.push_option (_option);
+				}
 			
-			Statement::SourceIndexRule (_rule) =>
-				_source_filter.rules.push (_rule.clone ()),
-			Statement::TargetIndexRule (_) =>
-				fail_unimplemented! (0x7855c3be),
+			Statement::SourceIndexRules (_rules) =>
+				_source_filter.rules.extend (_rules.iter () .cloned ()),
+			Statement::TargetIndexRules (_rules) =>
+				_source_filter.rules.extend (_rules.iter () .cloned ()),
 			
 			Statement::TargetRule (_rule) =>
 				_target_rules.rules.push (_rule.clone ()),
+			Statement::TargetRules (_rules) =>
+				_target_rules.rules.extend (_rules.iter () .cloned ()),
 		}
 	}
 	
