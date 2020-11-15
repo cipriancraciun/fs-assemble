@@ -812,6 +812,9 @@ fn prune_create (_sources_root : &Path, _targets_root : &Path, _targets_create_0
 					None
 				};
 				
+				// FIXME:  Always canonicalize for the moment...
+				let _link : Option<PathBuf> = None;
+				
 				let _link = if let Some (_link) = _link {
 					_link.into ()
 				} else {
