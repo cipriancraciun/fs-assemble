@@ -167,7 +167,6 @@ peg::parser! {
 #[ derive (Clone) ]
 #[ derive (Debug) ]
 pub enum Statement {
-	None,
 	SourceIndexOption (IndexOption),
 	SourceIndexRule (IndexRule),
 	TargetIndexOption (IndexOption),

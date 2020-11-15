@@ -59,7 +59,7 @@ pub fn execute (
 			
 			TargetOperation::Copy { source : _source } => {
 				
-				let _source_path_1 = Path::new (&_descriptor.path);
+				let _source_path_1 = Path::new (&_source.path);
 				let _source_path_0 = _sources_root.join (_source_path_1.strip_prefix ("/") .unwrap ());
 				let _source_path_0 = &_source_path_0;
 				

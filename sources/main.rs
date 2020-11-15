@@ -32,15 +32,25 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 	
 	let mut _target_filter = IndexRules::new_for_target ();
 	
-	
 	let mut _target_rules = TargetRules::new ();
-	_target_rules
-			.push_copy ("/Cargo.toml", "/Cargo.toml")
-			.push_symlink ("/Cargo.lock", "/Cargo.lock")
-			.push_copy ("/sources", "/sources")
-			.push_make_dir ("/1/2/3/4")
-			.push_protect ("/target/**")
-			.push_unlink ("/**");
+	
+	for _statement in _script.statements.iter () {
+		match _statement {
+			
+			Statement::SourceIndexOption (_) =>
+				fail_unimplemented! (0x9b62e004),
+			Statement::TargetIndexOption (_) =>
+				fail_unimplemented! (0x32734cee),
+			
+			Statement::SourceIndexRule (_) =>
+				fail_unimplemented! (0xebabd060),
+			Statement::TargetIndexRule (_) =>
+				fail_unimplemented! (0x7855c3be),
+			
+			Statement::TargetRule (_rule) =>
+				_target_rules.rules.push (_rule.clone ()),
+		}
+	}
 	
 	
 	// ----
