@@ -12,6 +12,9 @@ exclude '/target';
 # NOTE:  Also exclude all hidden inputs (i.e. whose name start with an `.`).
 exclude is hidden;
 
+# NOTE:  Alternative one can write all of the above in a single statement.
+-- exclude ( glob '/.git/**', '/target', is hidden );
+
 
 # NOTE:  Copy `Cargo.toml` from inputs root into outputs root.
 copy '/Cargo.toml';
@@ -23,9 +26,9 @@ symlink '/Cargo.lock';
 copy to '/src' from '/sources';
 
 # NOTE:  All of the following are equivalent!  (Note how `**` requires us to exclude folders.)
-#-- copy to '/src' find glob '/sources/*';
-#-- copy to '/src' find when all ( path glob '/sources/**', is file );
-#-- copy to '/src' find when all ( path glob '/sources/**', is not folder );
+-- copy to '/src' find glob '/sources/*';
+-- copy to '/src' find when all ( path glob '/sources/**', is file );
+-- copy to '/src' find when all ( path glob '/sources/**', is not folder );
 
 
 # NOTE:  Ensure that the `target` folder exists into outputs root.

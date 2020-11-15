@@ -50,6 +50,9 @@ fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> 
 				_target_rules.rules.push (_rule.clone ()),
 			Statement::TargetRules (_rules) =>
 				_target_rules.rules.extend (_rules.iter () .cloned ()),
+			
+			Statement::Commented =>
+				(),
 		}
 	}
 	

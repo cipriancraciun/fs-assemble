@@ -15,6 +15,12 @@ peg::parser! {
 		
 		pub rule statement () -> Statement
 			= (
+				statement_actual() /
+				"--" ws() statement_actual() { Statement::Commented }
+			)
+		
+		pub rule statement_actual () -> Statement
+			= (
 				
 				statement_copy_simple_1() /
 				statement_copy_simple_2() /
@@ -33,6 +39,8 @@ peg::parser! {
 				statement_index_options() /
 				statement_index_rules()
 			)
+		
+		
 		
 		
 		pub rule statement_copy_simple_1 () -> Statement
@@ -79,22 +87,26 @@ peg::parser! {
 			{ Statement::TargetRule (TargetRule::Unlink { target : _target.into () }) }
 		
 		
-		rule statement_end () -> ()
-			= ws()? ";"
-			{ () }
-		
 		
 		
 		pub rule statement_index_rules () -> Statement
 			= (
-				( "source" ws() )? _rule:statement_index_rule() statement_end() { Statement::SourceIndexRules (vec! [_rule]) } /
-				"target" ws() _rule:statement_index_rule() statement_end() { Statement::TargetIndexRules (vec! [_rule]) }
+				( "source" ws() )? _rules:statement_index_rules_one() { Statement::SourceIndexRules (_rules) } /
+				( "source" ws() )? _rules:statement_index_rules_many() { Statement::SourceIndexRules (_rules) } /
+				"target" ws() _rules:statement_index_rules_one() statement_end() { Statement::TargetIndexRules (_rules) } /
+				"target" ws() _rules:statement_index_rules_many() statement_end() { Statement::TargetIndexRules (_rules) }
 			)
 		
-		pub rule statement_index_rule () -> IndexRule
+		pub rule statement_index_rules_one () -> Vec<IndexRule>
 			= (
-				"include" ws() _selector:selector() { IndexRule::Include { selector : _selector } } /
-				"exclude" ws() _selector:selector() { IndexRule::Exclude { selector : _selector } }
+				"include" ws() _selector:selector() statement_end() { vec! [ IndexRule::Include { selector : _selector } ] } /
+				"exclude" ws() _selector:selector() statement_end() { vec! [ IndexRule::Exclude { selector : _selector } ] }
+			)
+		
+		pub rule statement_index_rules_many () -> Vec<IndexRule>
+			= (
+				"include" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")" statement_end() { _selectors.into_iter () .map (|_selector| IndexRule::Include { selector : _selector }) .collect () } /
+				"exclude" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")" statement_end() { _selectors.into_iter () .map (|_selector| IndexRule::Exclude { selector : _selector }) .collect () }
 			)
 		
 		
@@ -122,6 +134,21 @@ peg::parser! {
 				"fallback" ws() "no" ws() "collect" { IndexOption::FallbackCollect (false) }
 				
 			)
+		
+		
+		
+		
+		rule statement_block_begin () -> ()
+			= "{" ws()?
+			{ () }
+		
+		rule statement_block_end () -> ()
+			= ws()? "}"
+			{ () }
+		
+		rule statement_end () -> ()
+			= ws()? ";"
+			{ () }
 		
 		
 		
@@ -331,6 +358,7 @@ pub enum Statement {
 	TargetIndexRules (Vec<IndexRule>),
 	TargetRule (TargetRule),
 	TargetRules (Vec<TargetRule>),
+	Commented,
 }
 
 

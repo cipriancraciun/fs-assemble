@@ -16,6 +16,9 @@ pub(crate) fn trace_script (_script : &Script, _message : Option<&str>) -> () {
 	let mut _handled_none = true;
 	
 	for _statement in _script.statements.iter () {
+		if let Statement::Commented = _statement {
+			continue;
+		}
 		log_dump! (0xff407de5, "* {:?}", _statement);
 		_handled_none = false;
 	}
