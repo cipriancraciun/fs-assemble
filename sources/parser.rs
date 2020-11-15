@@ -154,28 +154,28 @@ peg::parser! {
 		
 		pub rule selector_when_all () -> EntrySelector
 			= (
-				( "when" / "if" ) ws() "all" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+				( "when" / "if" ) ws() "all" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
 					{ EntrySelector::All (_selectors) }
 			/
-				( "unless" / "if" ws() "not" ) ws() "all" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+				( "unless" / "if" ws() "not" ) ws() "all" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
 					{ EntrySelector::All (_selectors) .negate () }
 			)
 		
 		pub rule selector_when_any () -> EntrySelector
 			= (
-				( "when" / "if" ) ws() "any" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+				( "when" / "if" ) ws() "any" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
 					{ EntrySelector::Any (_selectors) }
 			/
-				( "unless" / "if" ws() "not" ) ws() "any" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+				( "unless" / "if" ws() "not" ) ws() "any" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
 					{ EntrySelector::Any (_selectors) .negate () }
 			)
 		
 		pub rule selector_when_none () -> EntrySelector
 			= (
-				( "when" / "if" ) ws() "none" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+				( "when" / "if" ) ws() "none" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
 					{ EntrySelector::None (_selectors) }
 			/
-				( "unless" / "if" ws() "not" ) ws() "none" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+				( "unless" / "if" ws() "not" ) ws() "none" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
 					{ EntrySelector::None (_selectors) .negate () }
 			)
 		
