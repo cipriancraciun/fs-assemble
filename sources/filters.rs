@@ -146,6 +146,15 @@ impl fsas::EntryMatcher {
 				Ok (_entry.is_file),
 			fsas::EntryMatcher::IsHidden =>
 				Ok (_entry.is_hidden),
+			
+			fsas::EntryMatcher::IsNotSymlink =>
+				Ok (! _entry.is_symlink),
+			fsas::EntryMatcher::IsNotDir =>
+				Ok (! _entry.is_dir),
+			fsas::EntryMatcher::IsNotFile =>
+				Ok (! _entry.is_file),
+			fsas::EntryMatcher::IsNotHidden =>
+				Ok (! _entry.is_hidden),
 		}
 	}
 }

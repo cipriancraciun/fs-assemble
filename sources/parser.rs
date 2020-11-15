@@ -87,8 +87,35 @@ peg::parser! {
 		
 		
 		pub rule selector () -> EntrySelector
+			= (
+				selector_negate() /
+				selector_matcher() /
+				selector_when_all() /
+				selector_when_any() /
+				selector_when_none() /
+				"always" { EntrySelector::Always } /
+				"never" { EntrySelector::Never }
+			)
+		
+		pub rule selector_matcher () -> EntrySelector
 			= _matcher:matcher()
 			{ EntrySelector::Matches (_matcher) }
+		
+		pub rule selector_negate () -> EntrySelector
+			= "not" ws() _selector:selector()
+			{ _selector.negate () }
+		
+		pub rule selector_when_all () -> EntrySelector
+			= "when" ws() "all" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+			{ EntrySelector::All (_selectors) }
+		
+		pub rule selector_when_any () -> EntrySelector
+			= "when" ws() "any" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+			{ EntrySelector::Any (_selectors) }
+		
+		pub rule selector_when_none () -> EntrySelector
+			= "when" ws() "none" ws()? "{" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? "}"
+			{ EntrySelector::None (_selectors) }
 		
 		
 		
@@ -97,8 +124,8 @@ peg::parser! {
 			= (
 				matcher_path() /
 				matcher_name() /
-				_pattern:pattern() { EntryMatcher::Path (_pattern) } /
-				_path:path() { EntryMatcher::Path (Pattern::exact (&_path)) }
+				matcher_kind() /
+				matcher_simple()
 			)
 		
 		pub rule matcher_path () -> EntryMatcher
@@ -108,6 +135,26 @@ peg::parser! {
 		pub rule matcher_name () -> EntryMatcher
 			= "name" ws() _pattern:pattern()
 			{ EntryMatcher::Name (_pattern) }
+		
+		pub rule matcher_kind () -> EntryMatcher
+			= (
+				
+				( "is" ws() ( "folder" / "directory" / "dir" ) ) { EntryMatcher::IsDir } /
+				( "is" ws() ( "file" / "regular" ) ) { EntryMatcher::IsFile } /
+				( "is" ws() "symlink" ) { EntryMatcher::IsSymlink } /
+				( "is" ws() "hidden" ) { EntryMatcher::IsHidden } /
+				
+				( "is" ws() "not" ws() ( "folder" / "directory" / "dir" ) ) { EntryMatcher::IsNotDir } /
+				( "is" ws() "not" ws() ( "file" / "regular" ) ) { EntryMatcher::IsNotFile } /
+				( "is" ws() "not" ws() "symlink" ) { EntryMatcher::IsNotSymlink } /
+				( "is" ws() "not" ws() "hidden" ) { EntryMatcher::IsNotHidden }
+			)
+		
+		pub rule matcher_simple () -> EntryMatcher
+			= (
+				_pattern:pattern() { EntryMatcher::Path (_pattern) } /
+				_path:path() { EntryMatcher::Path (Pattern::exact (&_path)) }
+			)
 		
 		
 		
@@ -140,7 +187,6 @@ peg::parser! {
 		pub rule pattern_regex () -> Pattern
 			= "regex" ws() _pattern:path()
 			{ Pattern::regex (&_pattern) .unwrap () }
-		
 		
 		
 		

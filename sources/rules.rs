@@ -106,6 +106,11 @@ pub enum EntryMatcher {
 	IsFile,
 	IsHidden,
 	
+	IsNotSymlink,
+	IsNotDir,
+	IsNotFile,
+	IsNotHidden,
+	
 }
 
 
