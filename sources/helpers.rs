@@ -92,13 +92,29 @@ impl EntrySelector {
 	}
 	
 	
+	
+	
+	pub fn if_matches (_matcher : EntryMatcher) -> EntrySelector {
+		EntrySelector::Matches (_matcher)
+	}
+	
 	pub fn if_matches_path (_pattern : Pattern) -> EntrySelector {
-		EntrySelector::Matches (EntryMatcher::Path (_pattern))
+		Self::if_matches (EntryMatcher::Path (_pattern))
+	}
+	pub fn if_matches_path_exact (_pattern : &str) -> EntrySelector {
+		Self::if_matches_path (Pattern::exact (_pattern))
+	}
+	pub fn if_matches_path_glob (_pattern : &str) -> EntrySelector {
+		Self::if_matches_path (Pattern::glob (_pattern) .unwrap ())
+	}
+	pub fn if_matches_path_regex (_pattern : &str) -> EntrySelector {
+		Self::if_matches_path (Pattern::regex (_pattern) .unwrap ())
 	}
 	
 	pub fn if_matches_name (_pattern : Pattern) -> EntrySelector {
 		EntrySelector::Matches (EntryMatcher::Name (_pattern))
 	}
+	
 	
 	pub fn if_is_symlink () -> EntrySelector {
 		EntrySelector::Matches (EntryMatcher::IsSymlink)
@@ -173,6 +189,8 @@ impl Pattern {
 	
 	pub fn glob (_pattern : &str) -> Outcome<Self> {
 		
+		let _source = _pattern.into ();
+		
 		let mut _builder = globset::GlobSetBuilder::new ();
 		
 		match globset::Glob::new (_pattern) {
@@ -185,7 +203,7 @@ impl Pattern {
 		
 		match _builder.build () {
 			Ok (_pattern) =>
-				Ok (Pattern::Glob (_pattern)),
+				Ok (Pattern::Glob (_pattern, _source)),
 			Err (_error) =>
 				fail! (0xdca40b00, "unexpected glob error:  {}", _error),
 		}
@@ -193,6 +211,8 @@ impl Pattern {
 	
 	
 	pub fn regex (_pattern : &str) -> Outcome<Self> {
+		
+		let _source = _pattern.into ();
 		
 		let mut _builder = regexb::RegexSetBuilder::new (&[_pattern]);
 		
@@ -203,7 +223,7 @@ impl Pattern {
 		
 		match _builder.build () {
 			Ok (_pattern) =>
-				Ok (Pattern::Regex (_pattern)),
+				Ok (Pattern::Regex (_pattern, _source)),
 			Err (_error) =>
 				fail! (0x6f0bb71e, "invalid regex pattern `{}`:  {}", _pattern, _error),
 		}

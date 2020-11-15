@@ -1,7 +1,7 @@
 
 
 use crate::prelude::*;
-use crate::rules::*;
+use crate::fsas::*;
 
 
 
@@ -73,6 +73,57 @@ pub(crate) fn trace_entries <'a> (_entries : impl Iterator<Item = &'a Entry>, _m
 	
 	if _message.is_some () {
 		log_cut! ();
+	}
+}
+
+
+
+
+impl fmt::Debug for Entry {
+	
+	fn fmt (&self, _formatter : &mut fmt::Formatter) -> fmt::Result {
+		
+		let mut _formatter = _formatter.debug_struct ("Entry");
+		
+		_formatter
+				.field ("depth", &self.depth)
+				.field ("path", &self.path);
+		
+		if self.is_dir {
+			_formatter.field ("is_dir", &true);
+		} else if self.is_file {
+			_formatter.field ("is_file", &true);
+		} else {
+			_formatter.field ("is_other", &true);
+		}
+		
+		if let Some (_link) = self.link.as_ref () {
+			_formatter.field ("is_symlink", &true);
+			_formatter.field ("link", _link);
+		}
+		
+		_formatter.finish ()
+	}
+}
+
+
+
+
+impl fmt::Debug for Pattern {
+	
+	fn fmt (&self, _formatter : &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Pattern::Exact (_pattern) =>
+				_formatter.debug_tuple ("Exact") .field (_pattern) .finish (),
+			Pattern::Prefix (_pattern) =>
+				_formatter.debug_tuple ("Exact") .field (_pattern) .finish (),
+			Pattern::Suffix (_pattern) =>
+				_formatter.debug_tuple ("Exact") .field (_pattern) .finish (),
+			Pattern::Glob (_pattern, _source) =>
+				_formatter.debug_tuple ("Exact") .field (_source) .finish (),
+			Pattern::Regex (_pattern, _source) =>
+				_formatter.debug_tuple ("Exact") .field (_source) .finish (),
+		}
 	}
 }
 

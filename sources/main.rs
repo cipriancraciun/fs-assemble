@@ -66,7 +66,7 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 	}
 	
 	if true {
-		fsas::trace_descriptors (_descriptors_planned.iter (), Some ("descriptors planned:"));
+		trace_descriptors (_descriptors_planned.iter (), Some ("descriptors planned:"));
 	}
 	
 	log_cut! ();

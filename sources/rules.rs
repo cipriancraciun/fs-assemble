@@ -6,7 +6,6 @@ use crate::prelude::*;
 
 
 #[ derive (Clone) ]
-#[ derive (Debug) ]
 pub struct Entry {
 	pub path : OsString,
 	pub name : OsString,
@@ -98,13 +97,12 @@ pub enum EntryMatcher {
 
 
 #[ derive (Clone) ]
-#[ derive (Debug) ]
 pub enum Pattern {
 	Exact (OsString),
 	Prefix (OsString),
 	Suffix (OsString),
-	Glob (globset::GlobSet),
-	Regex (regexb::RegexSet),
+	Glob (globset::GlobSet, String),
+	Regex (regexb::RegexSet, String),
 }
 
 

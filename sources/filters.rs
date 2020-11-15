@@ -166,11 +166,11 @@ impl fsas::Pattern {
 			fsas::Pattern::Suffix (_pattern) =>
 				Ok (_input.as_bytes () .ends_with (_pattern.as_bytes ())),
 			
-			fsas::Pattern::Glob (_pattern) =>
+			fsas::Pattern::Glob (_pattern, _) =>
 				// FIXME:  Use `globset::Candidate` to amortize preprocessing cost!
 				Ok (_pattern.is_match (_input)),
 			
-			fsas::Pattern::Regex (_pattern) =>
+			fsas::Pattern::Regex (_pattern, _) =>
 				Ok (_pattern.is_match (_input.as_bytes ())),
 			
 		}
