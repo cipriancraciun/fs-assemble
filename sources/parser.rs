@@ -105,8 +105,8 @@ peg::parser! {
 		
 		pub rule statement_index_rules_many () -> Vec<IndexRule>
 			= (
-				"include" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")" statement_end() { _selectors.into_iter () .map (|_selector| IndexRule::Include { selector : _selector }) .collect () } /
-				"exclude" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")" statement_end() { _selectors.into_iter () .map (|_selector| IndexRule::Exclude { selector : _selector }) .collect () }
+				"include" open() _selectors:selector() ** comma() comma()? close() statement_end() { _selectors.into_iter () .map (|_selector| IndexRule::Include { selector : _selector }) .collect () } /
+				"exclude" open() _selectors:selector() ** comma() comma()? close() statement_end() { _selectors.into_iter () .map (|_selector| IndexRule::Exclude { selector : _selector }) .collect () }
 			)
 		
 		
@@ -139,22 +139,22 @@ peg::parser! {
 		
 		
 		rule statement_block_begin () -> ()
-			= "{" ws()?
+			= ws_maybe() "{" ws_maybe()
 			{ () }
 		
 		rule statement_block_end () -> ()
-			= ws()? "}"
+			= ws_maybe() "}" ws_maybe()
 			{ () }
 		
 		rule statement_end () -> ()
-			= ws()? ";"
+			= ws_maybe() ";" ws_maybe()
 			{ () }
 		
 		
 		
 		
 		pub rule script () -> Script
-			= ws()? _statements:statement()**( ws()? ) ws()?
+			= ws_maybe() _statements:statement() ** ws_maybe() ws_maybe()
 			{ Script { statements : _statements } }
 		
 		
@@ -181,28 +181,28 @@ peg::parser! {
 		
 		pub rule selector_when_all () -> EntrySelector
 			= (
-				( "when" / "if" ) ws() "all" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
+				( "when" / "if" ) ws() "all" open() _selectors:selector() ** comma() comma()? close()
 					{ EntrySelector::All (_selectors) }
 			/
-				( "unless" / "if" ws() "not" ) ws() "all" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
+				( "unless" / "if" ws() "not" ) ws() "all" open() _selectors:selector() ** comma() comma()? close()
 					{ EntrySelector::All (_selectors) .negate () }
 			)
 		
 		pub rule selector_when_any () -> EntrySelector
 			= (
-				( "when" / "if" ) ws() "any" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
+				( "when" / "if" ) ws() "any" open() _selectors:selector() ** comma() comma()? close()
 					{ EntrySelector::Any (_selectors) }
 			/
-				( "unless" / "if" ws() "not" ) ws() "any" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
+				( "unless" / "if" ws() "not" ) ws() "any" open() _selectors:selector() ** comma() comma()? close()
 					{ EntrySelector::Any (_selectors) .negate () }
 			)
 		
 		pub rule selector_when_none () -> EntrySelector
 			= (
-				( "when" / "if" ) ws() "none" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
+				( "when" / "if" ) ws() "none" open() _selectors:selector() ** comma() comma()? close()
 					{ EntrySelector::None (_selectors) }
 			/
-				( "unless" / "if" ws() "not" ) ws() "none" ws()? "(" ws()? _selectors:selector()**( ws()? "," ws()? ) ws()? ")"
+				( "unless" / "if" ws() "not" ) ws() "none" open() _selectors:selector() ** comma() comma()? close()
 					{ EntrySelector::None (_selectors) .negate () }
 			)
 		
@@ -308,6 +308,8 @@ peg::parser! {
 			}
 		
 		
+		
+		
 		pub rule letter () -> char
 			= _span:$( ['a'..='z'|'A'..='Z'] )
 			{ _span.chars () .next () .unwrap () }
@@ -315,6 +317,19 @@ peg::parser! {
 		pub rule digit () -> char
 			= _span:$( ['0'..='9'] )
 			{ _span.chars () .next () .unwrap () }
+		
+		
+		rule open () -> ()
+			= ws_maybe() "(" ws_maybe()
+			{ () }
+		
+		rule close () -> ()
+			= ws_maybe() ")" ws_maybe()
+			{ () }
+		
+		rule comma () -> ()
+			= ws_maybe() "," ws_maybe()
+			{ () }
 		
 		
 		pub rule space () -> ()
@@ -335,6 +350,7 @@ peg::parser! {
 			= quiet!{ ( ['#'] ( !newline() [_] )* newline() )+ }
 			{ () }
 		
+		
 		pub rule ws () -> ()
 			= quiet!{ (
 				space() comment() /
@@ -342,6 +358,10 @@ peg::parser! {
 				newline() comment() /
 				newline()
 			)+ }
+			{ () }
+		
+		pub rule ws_maybe () -> ()
+			= quiet!{ ws()? }
 			{ () }
 	}
 }
