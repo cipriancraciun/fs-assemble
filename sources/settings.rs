@@ -7,6 +7,9 @@ pub const DUMP_VERBOSE : bool = true;
 pub const DUMP_VERBOSE : bool = false;
 
 
+pub const EXECUTION_ALLOWED : bool = true;
+
+
 pub const DUMP_UNIMPORTANT : bool = false;
 
 

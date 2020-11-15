@@ -41,14 +41,18 @@ pub fn execute (
 			TargetOperation::Unlink => {
 				if let Some (_existing) = &_descriptor.existing {
 					if _existing.is_dir && ! _existing.is_symlink {
-						if let Err (_error) = fs::remove_dir (_target_path_0) {
-							log_error! (0x64768287, "failed executing unlink for `{}`:  {}", _target_path_0_display, _error);
-							_failed = true;
+						if EXECUTION_ALLOWED {
+							if let Err (_error) = fs::remove_dir (_target_path_0) {
+								log_error! (0x64768287, "failed executing unlink for `{}`:  {}", _target_path_0_display, _error);
+								_failed = true;
+							}
 						}
 					} else {
-						if let Err (_error) = fs::remove_file (_target_path_0) {
-							log_error! (0x32536192, "failed executing unlink for `{}`:  {}", _target_path_0_display, _error);
-							_failed = true;
+						if EXECUTION_ALLOWED {
+							if let Err (_error) = fs::remove_file (_target_path_0) {
+								log_error! (0x32536192, "failed executing unlink for `{}`:  {}", _target_path_0_display, _error);
+								_failed = true;
+							}
 						}
 					}
 				} else {
@@ -72,16 +76,20 @@ pub fn execute (
 			}
 			
 			TargetOperation::MakeDir => {
-				if let Err (_error) = fs::create_dir (_target_path_0) {
-					log_error! (0x68f2f8b2, "failed executing mkdir for `{}`:  {}", _target_path_0_display, _error);
-					_failed = true;
+				if EXECUTION_ALLOWED {
+					if let Err (_error) = fs::create_dir (_target_path_0) {
+						log_error! (0x68f2f8b2, "failed executing mkdir for `{}`:  {}", _target_path_0_display, _error);
+						_failed = true;
+					}
 				}
 			}
 			
 			TargetOperation::MakeSymlink { link : _link } => {
-				if let Err (_error) = fs_unix::symlink (_link, _target_path_0) {
-					log_error! (0x5a1fffca, "failed executing symlink for `{}`:  {}", _target_path_0_display, _error);
-					_failed = true;
+				if EXECUTION_ALLOWED {
+					if let Err (_error) = fs_unix::symlink (_link, _target_path_0) {
+						log_error! (0x5a1fffca, "failed executing symlink for `{}`:  {}", _target_path_0_display, _error);
+						_failed = true;
+					}
 				}
 			}
 		}
@@ -105,6 +113,10 @@ pub fn execute_copy (_target_path_0 : &Path, _source_path_0 : &Path, _source : &
 	let _source_path_0_display = _source_path_0.display ();
 	
 	if _source.is_file {
+		
+		if ! EXECUTION_ALLOWED {
+			return Ok (true);
+		}
 		
 		let mut _temp_builder = tempfile::Builder::new ();
 		_temp_builder
