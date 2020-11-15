@@ -66,6 +66,19 @@ pub enum IndexRule {
 }
 
 
+#[ derive (Clone) ]
+#[ derive (Debug) ]
+pub enum IndexOption {
+	Root (OsString),
+	SymlinksCollect (bool),
+	SymlinksReculse (bool),
+	HiddenCollect (bool),
+	HiddenRecurse (bool),
+	FallbackCollect (bool),
+	FallbackRecurse (bool),
+}
+
+
 
 
 #[ derive (Clone) ]

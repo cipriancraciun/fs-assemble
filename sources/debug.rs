@@ -6,6 +6,31 @@ use crate::fsas::*;
 
 
 
+pub(crate) fn trace_script (_script : &Script, _message : Option<&str>) -> () {
+	
+	if let Some (_message) = _message {
+		log_cut! ();
+		log_debug! (0x23ea05b8, "{}", _message);
+	}
+	
+	let mut _handled_none = true;
+	
+	for _statement in _script.statements.iter () {
+		log_debug! (0xff407de5, "* {:?}", _statement);
+		_handled_none = false;
+	}
+	
+	if _handled_none {
+		log_debug! (0x8994f4fb, "* none");
+	}
+	
+	if _message.is_some () {
+		log_cut! ();
+	}
+}
+
+
+
 pub(crate) fn trace_descriptors <'a> (_descriptors : impl Iterator<Item = &'a TargetDescriptor>, _message : Option<&str>) -> () {
 	
 	if let Some (_message) = _message {

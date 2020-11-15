@@ -10,6 +10,7 @@ pub(crate) mod filters;
 pub(crate) mod helpers;
 pub(crate) mod indexer;
 pub(crate) mod main;
+pub(crate) mod parser;
 pub(crate) mod planner;
 pub(crate) mod prelude;
 pub(crate) mod rules;
@@ -32,6 +33,7 @@ pub mod fsas {
 	pub use crate::helpers::*;
 	pub use crate::indexer::*;
 	pub use crate::main::*;
+	pub use crate::parser::*;
 	pub use crate::planner::*;
 	pub use crate::rules::*;
 	pub use crate::tools::*;

@@ -1,13 +1,28 @@
 
 
 use crate::prelude::*;
+use crate::fsas::*;
 
 
 
 
-fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Result<(), io::Error> {
+fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> Result<(), io::Error> {
 	
-	use crate::fsas::*;
+	
+	// ----
+	
+	
+	log_cut! ();
+	log_notice! (0x96598390, "loading script `{}`...", _script_path.display ());
+	let _script = parse (_script_path) ?;
+	log_cut! ();
+	
+	if true {
+		trace_script (&_script, Some ("script:"));
+	}
+	
+	
+	// ----
 	
 	
 	let mut _source_filter = IndexRules::new_for_source ();
@@ -28,6 +43,9 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 			.push_unlink ("/**");
 	
 	
+	// ----
+	
+	
 	log_cut! ();
 	log_notice! (0x787ec493, "indexing source `{}`...", _source_root.display ());
 	let mut _sources_existing = EntryVec::new ();
@@ -41,6 +59,10 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 	let mut _targets_unhandled = EntryVec::new ();
 	index (_target_root, &_target_filter, &mut _targets_existing) ?;
 	log_cut! ();
+	
+	
+	// ----
+	
 	
 	let mut _descriptors_planned = TargetDescriptorVec::new ();
 	let mut _descriptors_skipped = TargetDescriptorVec::new ();
@@ -74,6 +96,10 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 	verify (&_descriptors_planned) ?;
 	log_cut! ();
 	
+	
+	// ----
+	
+	
 	let mut _descriptors_required = TargetDescriptorVec::new ();
 	let mut _descriptors_succeeded = TargetDescriptorVec::new ();
 	let mut _descriptors_failed = TargetDescriptorVec::new ();
@@ -90,8 +116,17 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 	log_cut! ();
 	
 	if true {
-		fsas::trace_descriptors (_descriptors_required.iter (), Some ("descriptors required:"));
+		trace_descriptors (_descriptors_required.iter (), Some ("descriptors required:"));
 	}
+	
+	log_cut! ();
+	log_notice! (0x4dfe419e, "verifying...");
+	verify (&_descriptors_required) ?;
+	log_cut! ();
+	
+	
+	// ----
+	
 	
 	log_cut! ();
 	log_notice! (0xc38cec3a, "executing...");
@@ -110,6 +145,10 @@ fn main_0 (_script : &Path, _source_root : &Path, _target_root : &Path) -> Resul
 		trace_descriptors (_descriptors_succeeded.iter (), Some ("descriptors succeeded:"));
 		trace_descriptors (_descriptors_skipped.iter (), Some ("descriptors skipped:"));
 	}
+	
+	
+	// ----
+	
 	
 	return Ok (());
 }
