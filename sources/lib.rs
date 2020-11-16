@@ -20,11 +20,12 @@ pub(crate) mod tools;
 
 
 
-pub use self::fsas::main;
+pub use self::main::main;
 
 
 
-pub mod fsas {
+
+pub mod lib {
 	
 	#![ allow (unused_imports) ]
 	

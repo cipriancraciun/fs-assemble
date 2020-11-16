@@ -1,11 +1,12 @@
 
 
 use crate::prelude::*;
+use crate::rules::*;
 
 
 
 
-pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mut Vec<fsas::Entry>) -> Outcome<()> {
+pub fn index (_root : &Path, _filter : &impl IndexFilter, _collector : &mut Vec<Entry>) -> Outcome<()> {
 	
 	let mut _walker = walkdir::WalkDir::new (_root)
 			.same_file_system (true) // FIXME
@@ -87,7 +88,7 @@ pub fn index (_root : &Path, _filter : &impl fsas::IndexFilter, _collector : &mu
 
 
 
-pub(crate) fn build_tree (_entries : Vec<fsas::Entry>) -> Outcome<BTreeMap<OsString, fsas::Entry>> {
+pub(crate) fn build_tree (_entries : Vec<Entry>) -> Outcome<BTreeMap<OsString, Entry>> {
 	
 	let mut _tree = BTreeMap::new ();
 	
@@ -103,7 +104,7 @@ pub(crate) fn build_tree (_entries : Vec<fsas::Entry>) -> Outcome<BTreeMap<OsStr
 
 
 
-fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<fsas::Entry> {
+fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<Entry> {
 	
 	let _is_symlink = _entry.path_is_symlink ();
 	let _file_type = _entry.file_type ();
@@ -114,7 +115,7 @@ fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<fsas::Entr
 }
 
 
-fn build_entry_0 (_root : &Path, _path : PathBuf, _is_symlink : bool, _file_type : fs::FileType, _depth : usize) -> Outcome<fsas::Entry> {
+fn build_entry_0 (_root : &Path, _path : PathBuf, _is_symlink : bool, _file_type : fs::FileType, _depth : usize) -> Outcome<Entry> {
 	
 	let _is_dir = _file_type.is_dir ();
 	
@@ -188,7 +189,7 @@ fn build_entry_0 (_root : &Path, _path : PathBuf, _is_symlink : bool, _file_type
 		None
 	};
 	
-	let _entry = fsas::Entry {
+	let _entry = Entry {
 			path : _relative_path,
 			name : _name,
 			depth : _depth,

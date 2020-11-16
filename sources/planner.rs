@@ -18,10 +18,10 @@ pub fn plan (
 			_descriptors_skipped : &mut TargetDescriptorVec,
 		) -> Outcome<()> {
 	
-	let mut _sources_existing = fsas::build_tree (_sources_existing) ?;
+	let mut _sources_existing = lib::build_tree (_sources_existing) ?;
 	let mut _sources_handled = PathSet::new ();
 	
-	let mut _targets_existing = fsas::build_tree (_targets_existing) ?;
+	let mut _targets_existing = lib::build_tree (_targets_existing) ?;
 	let mut _targets_handled = PathSet::new ();
 	
 	let mut _targets_pending = TargetDescriptorVec::new ();
@@ -34,7 +34,7 @@ pub fn plan (
 	extend_copy (&_sources_existing, &mut _sources_handled, &_targets_existing, &_targets_pending, &mut _targets_extended) ?;
 	
 	if DUMP_DESCRIPTORS_PLANNING {
-		fsas::trace_descriptors (_targets_extended.iter (), Some ("descriptors collected:"));
+		lib::trace_descriptors (_targets_extended.iter (), Some ("descriptors collected:"));
 	}
 	
 	let mut _targets_protect = TargetDescriptorMap::new ();
@@ -43,9 +43,9 @@ pub fn plan (
 	sort_targets (_targets_extended, &mut _targets_protect, &mut _targets_unlink_0, &mut _targets_create_0) ?;
 	
 	if DUMP_DESCRIPTORS_PLANNING {
-		fsas::trace_descriptors (_targets_create_0.values (), Some ("descriptors collected for creation:"));
-		fsas::trace_descriptors (_targets_protect.values (), Some ("descriptors collected for protection:"));
-		fsas::trace_descriptors (_targets_unlink_0.values (), Some ("descriptors collected for unlinking:"));
+		lib::trace_descriptors (_targets_create_0.values (), Some ("descriptors collected for creation:"));
+		lib::trace_descriptors (_targets_protect.values (), Some ("descriptors collected for protection:"));
+		lib::trace_descriptors (_targets_unlink_0.values (), Some ("descriptors collected for unlinking:"));
 	}
 	
 	let mut _targets_skipped = TargetDescriptorVec::new ();
@@ -57,10 +57,10 @@ pub fn plan (
 	prune_create (_sources_root, _targets_root, _targets_create_0, &mut _targets_protect, &mut _targets_create, &mut _targets_skipped) ?;
 	
 	if DUMP_DESCRIPTORS_PLANNING {
-		fsas::trace_descriptors (_targets_create.values (), Some ("descriptors planned for creation:"));
-		fsas::trace_descriptors (_targets_protect.values (), Some ("descriptors planned for protection:"));
-		fsas::trace_descriptors (_targets_unlink.values (), Some ("descriptors planned for unlinking:"));
-		fsas::trace_descriptors (_targets_skipped.iter (), Some ("descriptors skipped:"));
+		lib::trace_descriptors (_targets_create.values (), Some ("descriptors planned for creation:"));
+		lib::trace_descriptors (_targets_protect.values (), Some ("descriptors planned for protection:"));
+		lib::trace_descriptors (_targets_unlink.values (), Some ("descriptors planned for unlinking:"));
+		lib::trace_descriptors (_targets_skipped.iter (), Some ("descriptors skipped:"));
 	}
 	
 	for (_, _source) in _sources_existing.into_iter () {
