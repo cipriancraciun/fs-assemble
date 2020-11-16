@@ -57,7 +57,7 @@ peg::parser! {
 		
 		
 		pub rule statement_symlink_simple_1 () -> Statement
-			= "symlink" space () _target:path() statement_end()
+			= "symlink" ws() _target:path() statement_end()
 			{ Statement::TargetRule (TargetRule::Symlink { source : EntrySelector::if_matches_path_exact (&_target), target : _target.into () }) }
 		
 		pub rule statement_symlink_simple_2 () -> Statement
@@ -285,7 +285,7 @@ peg::parser! {
 		
 		
 		pub rule identifier () -> String
-			= _span:$( ( letter() / digit() / ['_'] )+ )
+			= _span:$( ( letters() / digits() / ['_'] )+ )
 			{ _span.into () }
 		
 		
@@ -310,13 +310,13 @@ peg::parser! {
 		
 		
 		
-		pub rule letter () -> char
-			= _span:$( ['a'..='z'|'A'..='Z'] )
-			{ _span.chars () .next () .unwrap () }
+		pub rule letters () -> ()
+			= ['a'..='z'|'A'..='Z']
+			{ () }
 		
-		pub rule digit () -> char
-			= _span:$( ['0'..='9'] )
-			{ _span.chars () .next () .unwrap () }
+		pub rule digits () -> ()
+			= ['0'..='9']
+			{ () }
 		
 		
 		rule open () -> ()
@@ -332,31 +332,31 @@ peg::parser! {
 			{ () }
 		
 		
-		pub rule space () -> ()
+		pub rule ws_space () -> ()
 			= quiet!{
 				[' '|'\t']+ /
-				( [' '|'\t']+ ( ['\\'] newline() )+ [' '|'\t']* )+
+				( [' '|'\t']+ ( ['\\'] ws_newline() )+ [' '|'\t']* )+
 			}
 			{ () }
 		
-		pub rule newline () -> ()
+		pub rule ws_newline () -> ()
 			= quiet!{
 				['\n'] /
 				( ['\r'] ['\n'] )
 			}
 			{ () }
 		
-		pub rule comment () -> ()
-			= quiet!{ ( ['#'] ( !newline() [_] )* newline() )+ }
+		pub rule ws_comment () -> ()
+			= quiet!{ ( ['#'] ( !ws_newline() [_] )* ws_newline() )+ }
 			{ () }
 		
 		
 		pub rule ws () -> ()
 			= quiet!{ (
-				space() comment() /
-				space() /
-				newline() comment() /
-				newline()
+				ws_space() ws_comment() /
+				ws_space() /
+				ws_newline() ws_comment() /
+				ws_newline()
 			)+ }
 			{ () }
 		

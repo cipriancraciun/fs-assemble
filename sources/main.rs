@@ -6,7 +6,7 @@ use crate::lib::*;
 
 
 
-fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> Result<(), io::Error> {
+pub fn main_0 (_script_path : &Path, _source_root : &Path, _target_root : &Path) -> Result<(), io::Error> {
 	
 	
 	// ----

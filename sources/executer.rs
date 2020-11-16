@@ -116,7 +116,7 @@ pub fn execute (
 
 
 
-pub fn execute_copy (_target_path_0 : &Path, _source_path_0 : &Path, _source : &Entry) -> Outcome<bool> {
+pub(crate) fn execute_copy (_target_path_0 : &Path, _source_path_0 : &Path, _source : &Entry) -> Outcome<bool> {
 	
 	let _target_path_0_display = _target_path_0.display ();
 	let _source_path_0_display = _source_path_0.display ();
