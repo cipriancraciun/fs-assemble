@@ -129,9 +129,9 @@ pub fn execute_copy (_target_path_0 : &Path, _source_path_0 : &Path, _source : &
 		
 		let mut _temp_builder = tempfile::Builder::new ();
 		_temp_builder
-				.prefix (".fsas.")
-				.suffix (".tmp")
-				.rand_bytes (16);
+				.prefix (TEMPFILE_PREFIX)
+				.suffix (TEMPFILE_SUFFIX)
+				.rand_bytes (TEMPFILE_TOKEN);
 		
 		let _temp_file = if let Some (_temp_parent_0) = _target_path_0.parent () {
 			match _temp_builder.tempfile_in (_temp_parent_0) {

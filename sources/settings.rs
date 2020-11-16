@@ -38,3 +38,8 @@ pub const LOG_LEVEL_INFORMATION : u16 = 30_000;
 pub const LOG_LEVEL_DEBUG : u16 = 20_000;
 pub const LOG_LEVEL_TRACE : u16 = 10_000;
 
+
+pub const TEMPFILE_PREFIX : &str = ".fsas.";
+pub const TEMPFILE_SUFFIX : &str = ".tmp";
+pub const TEMPFILE_TOKEN : usize = 16;
+
