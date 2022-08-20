@@ -4,16 +4,16 @@
 
 macro_rules! fail {
 	( $_code : expr, $_message : expr ) => {
-		return Err ($crate::tools::error ($_code, format_args! ($_message)));
+		return Err ($crate::tools::error ($_code, format_args! ($_message)))
 	};
 	( $_code : expr, $_format : expr, $( $_arguments : expr ),* ) => {
-		return Err ($crate::tools::error ($_code, format_args! ($_format, $( $_arguments ),* )));
+		return Err ($crate::tools::error ($_code, format_args! ($_format, $( $_arguments ),* )))
 	};
 }
 
 macro_rules! fail_unimplemented {
 	( $_code : expr ) => {
-		return Err ($crate::tools::error ($_code, format_args! ("not implemented")));
+		return Err ($crate::tools::error ($_code, format_args! ("not implemented")))
 	};
 }
 
@@ -26,22 +26,22 @@ macro_rules! log_define {
 		#[ allow (unused_macros) ]
 		macro_rules! $_name {
 			( $_code : expr, $_message : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_message));
+				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_message))
 			};
 			( $_code : expr, $_format : expr, $_argument_1 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1));
+				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1))
 			};
 			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2));
+				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2))
 			};
 			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr, $_argument_3 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2, $_argument_3));
+				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2, $_argument_3))
 			};
 			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr, $_argument_3 : expr, $_argument_4 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2, $_argument_3, $_argument_4));
+				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2, $_argument_3, $_argument_4))
 			};
 			( $_code : expr, $_format : expr, $_argument_1 : expr, $_argument_2 : expr, $_argument_3 : expr, $_argument_4 : expr, $_argument_5 : expr ) => {
-				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2, $_argument_3, $_argument_4, $_argument_5));
+				$crate::tools::log ($_slug, $_level, $_code, format_args! ($_format, $_argument_1, $_argument_2, $_argument_3, $_argument_4, $_argument_5))
 			};
 		}
 	}
