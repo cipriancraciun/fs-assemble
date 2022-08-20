@@ -15,11 +15,17 @@ pub fn index (_root : &Path, _filter : &impl IndexFilter, _collector : &mut Vec<
 			.sort_by (|_left, _right| OsStr::cmp (_left.file_name (), _right.file_name ()))
 			.into_iter ();
 	
+	let mut _no_recurse = HashSet::new ();
+	
 	loop {
 		
-		let _build_entry = match _walker.next () {
-			Some (Ok (_entry)) =>
-				build_entry (_root, _entry),
+		let _walker_next = _walker.next ();
+		
+		log_trace! (0xca0bd5eb, "walking `{:?}`...", _walker_next);
+		
+		let (_walker_path, _build_entry) = match _walker_next {
+			Some (Ok (_walker_entry)) =>
+				(_walker_entry.path () .to_path_buf (), build_entry (_root, &_walker_entry)),
 			Some (Err (_walk_error)) =>
 				if let Some (_io_error) = _walk_error.io_error () {
 					match _io_error.kind () {
@@ -27,7 +33,7 @@ pub fn index (_root : &Path, _filter : &impl IndexFilter, _collector : &mut Vec<
 							let _path = _walk_error.path () .unwrap ();
 							match fs::symlink_metadata (_path) {
 								Ok (_metadata) =>
-									build_entry_0 (_root, _path.into (), _metadata.file_type () .is_symlink (), _metadata.file_type (), _walk_error.depth ()),
+									(_path.to_path_buf (), build_entry_0 (_root, _path.into (), _metadata.file_type () .is_symlink (), _metadata.file_type (), _walk_error.depth ())),
 								Err (_) => {
 									log_error! (0x69898a65, "unexpected error encountered while indexing;  ignoring!  ||  {}", _walk_error);
 									continue;
@@ -56,7 +62,17 @@ pub fn index (_root : &Path, _filter : &impl IndexFilter, _collector : &mut Vec<
 			}
 		};
 		
+		// NOTE:  See https://github.com/BurntSushi/walkdir/issues/166
+		if let Some (_parent) = _walker_path.parent () {
+			if _no_recurse.contains (_parent) {
+				log_trace! (0xb64e6f82, "skipping `{}`;", _entry.path_display ());
+				_walker.skip_current_dir ();
+				continue;
+			}
+		}
+		
 		log_trace! (0xa54d097c, "indexing `{}`...", _entry.path_display ());
+		log_trace! (0x252c6dcd, "indexing `{:?}`...", _entry);
 		
 		let _decision = match _filter.filter (&_entry) {
 			Ok (_decision) =>
@@ -67,10 +83,12 @@ pub fn index (_root : &Path, _filter : &impl IndexFilter, _collector : &mut Vec<
 			}
 		};
 		
+		log_trace! (0x252c6dcd, "filtered `{:?}`...", _decision);
+		
 		if ! _decision.recurse {
 			if _entry.is_dir {
 				log_trace! (0xb64e6f82, "dropping `{}`;", _entry.path_display ());
-				_walker.skip_current_dir ();
+				_no_recurse.insert (_walker_path);
 			}
 		}
 		
@@ -104,12 +122,12 @@ pub(crate) fn build_tree (_entries : Vec<Entry>) -> Outcome<BTreeMap<OsString, E
 
 
 
-fn build_entry (_root : &Path, _entry : walkdir::DirEntry) -> Outcome<Entry> {
+fn build_entry (_root : &Path, _entry : &walkdir::DirEntry) -> Outcome<Entry> {
 	
 	let _is_symlink = _entry.path_is_symlink ();
 	let _file_type = _entry.file_type ();
 	let _depth = _entry.depth ();
-	let _path = _entry.into_path ();
+	let _path = _entry.path () .to_path_buf ();
 	
 	return build_entry_0 (_root, _path, _is_symlink, _file_type, _depth);
 }
