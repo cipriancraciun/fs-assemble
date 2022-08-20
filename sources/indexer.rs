@@ -9,9 +9,9 @@ use crate::rules::*;
 pub fn index (_root : &Path, _filter : &impl IndexFilter, _collector : &mut Vec<Entry>) -> Outcome<()> {
 	
 	let mut _walker = walkdir::WalkDir::new (_root)
-			.same_file_system (true) // FIXME
-			.follow_links (true) // FIXME
-			.contents_first (false) // FIXME
+			.same_file_system (false)  // FIXME
+			.follow_links (true)  // FIXME
+			.contents_first (false)  // NOTE:  Required by iteration logic!
 			.sort_by (|_left, _right| OsStr::cmp (_left.file_name (), _right.file_name ()))
 			.into_iter ();
 	
